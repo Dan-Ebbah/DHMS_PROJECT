@@ -1,3 +1,3 @@
 public interface ReplicaManagerInterface {
-    void processRequest();
+    void processRequest(String request, int sequenceNumber);
 }
