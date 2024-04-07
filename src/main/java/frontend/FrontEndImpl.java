@@ -1,11 +1,13 @@
 package frontend;
 
+import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
 public class FrontEndImpl implements FrontEndInterface {
@@ -134,6 +136,12 @@ public class FrontEndImpl implements FrontEndInterface {
 
     private String createUdpRequest(String... requestElements) {
         StringBuilder udpRequestStringBuilder = new StringBuilder();
+        try {
+            udpRequestStringBuilder.append(InetAddress.getLocalHost().getHostAddress());
+            udpRequestStringBuilder.append(" " + FE_RECEIVE_PORT_FOR_RM + " ");
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
         requestId ++;
         udpRequestStringBuilder.append(requestId);
         for (String requestElement: requestElements) {
