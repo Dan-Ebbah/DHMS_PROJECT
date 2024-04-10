@@ -1,6 +1,5 @@
 package frontend;
 
-import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
 
 import java.io.IOException;
