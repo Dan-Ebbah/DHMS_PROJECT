@@ -5,6 +5,8 @@ import static frontend.ValidationHelper.isValidAppointmentType;
 import static frontend.ValidationHelper.isValidUserID;
 import static java.lang.Thread.sleep;
 
+import javax.jws.WebService;
+import javax.jws.soap.SOAPBinding;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -12,6 +14,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
+@WebService(endpointInterface="frontend.FrontEndInterface")
+@SOAPBinding(style= SOAPBinding.Style.RPC)
 public class FrontEndImpl implements FrontEndInterface {
 
     private static final int FE_RECEIVE_PORT_FOR_RM = 19000;
