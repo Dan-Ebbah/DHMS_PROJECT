@@ -48,5 +48,21 @@ public class ReplicaManager {
         String[] splitRequestMessage = request.split(" ");
 
     }
+    public static void forwardToFrontEnd(DatagramPacket recPacket, DatagramSocket socket)
+    {
+        String sentence = new String(recPacket.getData(), 0, recPacket.getLength());
+        String[] parts = sentence.split(" ");
+        try {
 
+            String finalMessage = parts[3];//requestId;
+            byte[] data = finalMessage.getBytes();
+            InetAddress FrontAddress = InetAddress.getByName(parts[1]);
+            int FrontEndPort = Integer.parseInt(parts[2]);
+            DatagramPacket packet = new DatagramPacket(data, data.length, FrontAddress,FrontEndPort);
+            socket.send(packet);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
