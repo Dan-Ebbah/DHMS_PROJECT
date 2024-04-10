@@ -64,8 +64,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = patientID.substring(0, 3);
         String operationName = "bookAppointment";
-        udpRequest = createUdpRequest(operationName, patientID, appointmentID, appointmentType);
+        udpRequest = createUdpRequest(city, operationName, patientID, appointmentID, appointmentType);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -76,8 +77,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = patientID.substring(0, 3);
         String operationName = "getAppointmentSchedule";
-        udpRequest = createUdpRequest(operationName, patientID, patientID);
+        udpRequest = createUdpRequest(city, operationName, patientID, patientID);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -88,8 +90,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = patientID.substring(0, 3);
         String operationName = "cancelAppointment";
-        udpRequest = createUdpRequest(operationName, patientID, appointmentID);
+        udpRequest = createUdpRequest(city, operationName, patientID, appointmentID);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -102,8 +105,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = adminID.substring(0, 3);
         String operationName = "addAppointment";
-        udpRequest = createUdpRequest(operationName, appointmentID, appointmentType, String.valueOf(capacity));
+        udpRequest = createUdpRequest(city, operationName, appointmentID, appointmentType, String.valueOf(capacity));
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -116,8 +120,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = adminID.substring(0, 3);
         String operationName = "removeAppointment";
-        udpRequest = createUdpRequest(operationName, appointmentID, appointmentType);
+        udpRequest = createUdpRequest(city, operationName, appointmentID, appointmentType);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -128,8 +133,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = adminID.substring(0, 3);
         String operationName = "listAppointmentAvailability";
-        udpRequest = createUdpRequest(operationName, appointmentType);
+        udpRequest = createUdpRequest(city, operationName, appointmentType);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -144,8 +150,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = patientID.substring(0, 3);
         String operationName = "swapAppointment";
-        udpRequest = createUdpRequest(operationName, patientID, oldAppointmentID, oldAppointmentType, newAppointmentID, newAppointmentType);
+        udpRequest = createUdpRequest(city, operationName, patientID, oldAppointmentID, oldAppointmentType, newAppointmentID, newAppointmentType);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -189,6 +196,7 @@ public class FrontEndImpl implements FrontEndInterface {
         }
         requestId ++;
         udpRequestStringBuilder.append(requestId);
+        udpRequestStringBuilder.append(" :");
         for (String requestElement: requestElements) {
             udpRequestStringBuilder.append(" ").append(requestElement);
         }
