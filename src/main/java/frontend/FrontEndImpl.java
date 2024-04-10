@@ -1,5 +1,8 @@
 package frontend;
 
+import static frontend.ValidationHelper.isValidAppointmentID;
+import static frontend.ValidationHelper.isValidAppointmentType;
+import static frontend.ValidationHelper.isValidUserID;
 import static java.lang.Thread.sleep;
 
 import java.io.IOException;
@@ -16,6 +19,7 @@ public class FrontEndImpl implements FrontEndInterface {
     private static final int FE_SEND_PORT_FOR_RM = 19002;
     private static final String[] RM_HOSTS = new String[] {"", "", "", ""};
     private static final int[] RM_PORTS = new int[] {1, 1, 1, 1};
+    private static final String FAILURE = "FAILURE";
 
     private final DatagramSocket socketToSendToSequencer;
     private final DatagramSocket socketToReceiveFromRMs;
@@ -50,6 +54,12 @@ public class FrontEndImpl implements FrontEndInterface {
 
     @Override
     public String bookAppointment(String patientID, String appointmentID, String appointmentType) {
+        if (!isValidUserID(patientID)
+                || !isValidAppointmentID(appointmentID)
+                || !isValidAppointmentType(appointmentType)) {
+            return FAILURE;
+        }
+
         String operationName = "bookAppointment";
         udpRequest = createUdpRequest(operationName, patientID, appointmentID, appointmentType);
         callSequencer();
@@ -58,6 +68,10 @@ public class FrontEndImpl implements FrontEndInterface {
 
     @Override
     public String getAppointmentSchedule(String patientID) {
+        if (!isValidUserID(patientID)) {
+            return FAILURE;
+        }
+
         String operationName = "getAppointmentSchedule";
         udpRequest = createUdpRequest(operationName, patientID, patientID);
         callSequencer();
@@ -66,6 +80,10 @@ public class FrontEndImpl implements FrontEndInterface {
 
     @Override
     public String cancelAppointment(String patientID, String appointmentID) {
+        if (!isValidUserID(patientID) || !isValidAppointmentID(appointmentID)) {
+            return FAILURE;
+        }
+
         String operationName = "cancelAppointment";
         udpRequest = createUdpRequest(operationName, patientID, appointmentID);
         callSequencer();
@@ -73,7 +91,13 @@ public class FrontEndImpl implements FrontEndInterface {
     }
 
     @Override
-    public String addAppointment(String appointmentID, String appointmentType, int capacity) {
+    public String addAppointment(String adminID, String appointmentID, String appointmentType, int capacity) {
+        if (!isValidUserID(adminID)
+                || !isValidAppointmentID(appointmentID, adminID)
+                || !isValidAppointmentType(appointmentType)) {
+            return FAILURE;
+        }
+
         String operationName = "addAppointment";
         udpRequest = createUdpRequest(operationName, appointmentID, appointmentType, String.valueOf(capacity));
         callSequencer();
@@ -81,7 +105,13 @@ public class FrontEndImpl implements FrontEndInterface {
     }
 
     @Override
-    public String removeAppointment(String appointmentID, String appointmentType) {
+    public String removeAppointment(String adminID, String appointmentID, String appointmentType) {
+        if (!isValidUserID(adminID)
+                || !isValidAppointmentID(appointmentID, adminID)
+                || !isValidAppointmentType(appointmentType)) {
+            return FAILURE;
+        }
+
         String operationName = "removeAppointment";
         udpRequest = createUdpRequest(operationName, appointmentID, appointmentType);
         callSequencer();
@@ -89,7 +119,11 @@ public class FrontEndImpl implements FrontEndInterface {
     }
 
     @Override
-    public String listAppointmentAvailability(String appointmentType) {
+    public String listAppointmentAvailability(String adminID, String appointmentType) {
+        if (!isValidUserID(adminID) || !isValidAppointmentType(appointmentType)) {
+            return FAILURE;
+        }
+
         String operationName = "listAppointmentAvailability";
         udpRequest = createUdpRequest(operationName, appointmentType);
         callSequencer();
@@ -98,6 +132,14 @@ public class FrontEndImpl implements FrontEndInterface {
 
     @Override
     public String swapAppointment(String patientID, String oldAppointmentID, String oldAppointmentType, String newAppointmentID, String newAppointmentType) {
+        if (!isValidUserID(patientID)
+                || !isValidAppointmentID(oldAppointmentID)
+                || !isValidAppointmentType(oldAppointmentType)
+                || !isValidAppointmentID(newAppointmentID)
+                || !isValidAppointmentType(newAppointmentType)) {
+            return FAILURE;
+        }
+
         String operationName = "swapAppointment";
         udpRequest = createUdpRequest(operationName, patientID, oldAppointmentID, oldAppointmentType, newAppointmentID, newAppointmentType);
         callSequencer();

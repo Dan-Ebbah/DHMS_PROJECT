@@ -15,11 +15,11 @@ public interface FrontEndInterface {
     @WebMethod
     String cancelAppointment (String patientID, String appointmentID);
     @WebMethod
-    String addAppointment (String appointmentID, String appointmentType, int capacity);
+    String addAppointment (String adminID, String appointmentID, String appointmentType, int capacity);
     @WebMethod
-    String removeAppointment (String appointmentID, String appointmentType);
+    String removeAppointment (String adminID, String appointmentID, String appointmentType);
     @WebMethod
-    String listAppointmentAvailability (String appointmentType);
+    String listAppointmentAvailability (String adminID, String appointmentType);
     @WebMethod
     String swapAppointment (String patientID, String oldAppointmentID, String oldAppointmentType, String newAppointmentID, String newAppointmentType);
 }
