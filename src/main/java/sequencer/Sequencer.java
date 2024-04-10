@@ -7,11 +7,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Sequencer {
-    private static final AtomicInteger sequencer_ID = new AtomicInteger(0);
-    private static final String sequencer_IP = "192.168.2.17";
-    private static final int sequencer_Port = 2222;
+    private static final AtomicInteger seq_ID = new AtomicInteger(0);
+    private static final String seq_IP = "192.168.2.17";
+    private static final int seq_Port = 2222;
+
     private static final int[] replicaPorts = {5000, 5001, 5002, 5003}; // Ports of the replica managers
-    private static final int BUFFER_SIZE = 1024;
+    private static final int SIZE = 1024;
     private static final long ACK_TIMEOUT = 2000; // Timeout for acknowledgment in milliseconds
     private static final int NUM_REPLICA_MANAGERS = 4;
 
@@ -20,11 +21,13 @@ public class Sequencer {
     public static void main(String[] args) {
         try {
             DatagramSocket sequencerSocket = new DatagramSocket(null);
-            sequencerSocket.bind(new InetSocketAddress(sequencer_IP, sequencer_Port));
+            sequencerSocket.bind(new InetSocketAddress(seq_IP, seq_Port));
             System.out.println("Sequencer started...");
 
+
+
             while (true) {
-                byte[] receiveData = new byte[BUFFER_SIZE];
+                byte[] receiveData = new byte[SIZE];
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 sequencerSocket.receive(receivePacket);
                 new Thread(() -> processRequest(sequencerSocket, receivePacket)).start();
@@ -35,46 +38,38 @@ public class Sequencer {
     }
 
     private static void processRequest(DatagramSocket socket, DatagramPacket request) {
-        try {
-            String sentence = new String(request.getData(), 0, request.getLength());
-            String[] parts = sentence.split(" ");
+        String sentence = new String(request.getData(), 0, request.getLength());
+        String[] parts = sentence.split(" ");
 
-            int sequencerId = Integer.parseInt(parts[0]);
-            String message = constructMessage(parts);
+        int sequencerId = Integer.parseInt(parts[0]);
+        String message = constructMessage(parts);
 
-            if (sequencerId == 0) {
-                sequencerId = sequencer_ID.incrementAndGet();
-            }
-
-            // Initialize acknowledgment map for this sequencer ID
-            ackMap.put(sequencerId, new ConcurrentHashMap<>());
-
-            // Send request to each replica manager using unicast
-            for (int i = 0; i < NUM_REPLICA_MANAGERS; i++) {
-                sendMessage(socket, sequencerId, message, replicaPorts[i]);
-            }
-
-            // Wait for acknowledgment from each replica manager
-            waitForAcknowledgment(sequencerId);
-
-            // If acknowledgment not received from any replica manager, resend the request
-            while (!allReplicaAcknowledged(sequencerId)) {
-                for (int i = 0; i < NUM_REPLICA_MANAGERS; i++) {
-                    if (!ackMap.get(sequencerId).get(i)) {
-                        sendMessage(socket, sequencerId, message, replicaPorts[i]);
-                    }
-                }
-                waitForAcknowledgment(sequencerId);
-            }
-
-            // Send acknowledgment to the client
-            byte[] seqId = Integer.toString(sequencerId).getBytes();
-            DatagramPacket response = new DatagramPacket(seqId, seqId.length, request.getAddress(), request.getPort());
-            socket.send(response);
-
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (sequencerId == 0) {
+            sequencerId = seq_ID.incrementAndGet();
         }
+
+        // Initialize acknowledgment map for this sequencer ID
+        ackMap.put(sequencerId, new ConcurrentHashMap<>());
+
+        // Send request to each replica manager using unicast
+        for (int i = 0; i < NUM_REPLICA_MANAGERS; i++) {
+            sendMessage(socket, sequencerId, message, replicaPorts[i]);
+        }
+
+        // Wait for acknowledgment from each replica manager
+        waitForAcknowledgment(sequencerId);
+
+        // If acknowledgment not received from any replica manager, resend the request
+        while (!allReplicaAcknowledged(sequencerId)) {
+            for (int i = 0; i < NUM_REPLICA_MANAGERS; i++) {
+                if (!ackMap.get(sequencerId).get(i)) {
+                    sendMessage(socket, sequencerId, message, replicaPorts[i]);
+                }
+            }
+            waitForAcknowledgment(sequencerId);
+        }
+
+
     }
 
     private static void waitForAcknowledgment(int sequencerId) {
