@@ -25,9 +25,9 @@ public class ReplicaManager {
                 rmSocket.receive(receivePacket);
                 String messageReceived = new String(receivePacket.getData(), 0, receivePacket.getLength());
                 acknowledgeReceipt(receivePacket, rmSocket);
-                String[] splitMessage = messageReceived.split(" ");
+                String[] splitMessage = messageReceived.split(":");
 
-                sendToReplica(splitMessage[1]);
+                forwardToReplica(splitMessage[1]);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -44,7 +44,8 @@ public class ReplicaManager {
         socket.send(ackPacket);
     }
 
-    private static void sendToReplica(String s) {
+    private static void forwardToReplica(String request) {
+        String[] splitRequestMessage = request.split(" ");
 
     }
 
