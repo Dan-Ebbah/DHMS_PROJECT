@@ -25,9 +25,9 @@ public class ReplicaManager {
                 rmSocket.receive(receivePacket);
                 String messageReceived = new String(receivePacket.getData(), 0, receivePacket.getLength());
                 acknowledgeReceipt(receivePacket, rmSocket);
-                String[] splitMessage = messageReceived.split(" ");
+                String[] splitMessage = messageReceived.split(":");
 
-                sendToReplica(splitMessage[1]);
+                forwardToReplica(splitMessage[1]);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -44,8 +44,25 @@ public class ReplicaManager {
         socket.send(ackPacket);
     }
 
-    private static void sendToReplica(String s) {
+    private static void forwardToReplica(String request) {
+        String[] splitRequestMessage = request.split(" ");
 
     }
+    public static void forwardToFrontEnd(DatagramPacket recPacket, DatagramSocket socket)
+    {
+        String sentence = new String(recPacket.getData(), 0, recPacket.getLength());
+        String[] parts = sentence.split(" ");
+        try {
 
+            String finalMessage = parts[3];//requestId;
+            byte[] data = finalMessage.getBytes();
+            InetAddress FrontAddress = InetAddress.getByName(parts[1]);
+            int FrontEndPort = Integer.parseInt(parts[2]);
+            DatagramPacket packet = new DatagramPacket(data, data.length, FrontAddress,FrontEndPort);
+            socket.send(packet);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
