@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Sequencer {
     private static final AtomicInteger SEQUENCER_ID = new AtomicInteger(0);
-    private static final String SEQUENCER_IP = "192.168.2.17";
+    private static final String SEQUENCER_IP = "localhost";
     private static final int SEQUENCER_RECEIVE_PORT = 2222;
     private static final int[] RM_PORTS = {5000, 5001, 5002, 5003}; // Ports of the replica managers
     private static final String[] RM_HOSTS = {"", "", "", ""};
