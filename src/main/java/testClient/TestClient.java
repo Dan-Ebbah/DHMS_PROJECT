@@ -1,4 +1,4 @@
-package com.webservice.hi;
+package testClient;
 
 import com.sun.net.httpserver.Authenticator;
 
@@ -16,7 +16,7 @@ import java.util.Scanner;
 public class TestClient {
     static String logPath;
     static String clientID;
-    static clientToFE stub;
+    static ClientToFE stub;
     static FrontEndInterface fe;
 
     private static void setClient(String newClientID){
@@ -33,7 +33,7 @@ public class TestClient {
             QName qName2 = new QName("http://frontend/", "FrontEndImplPort");
             Service service = Service.create(url, qName);
             fe = service.getPort(qName2,FrontEndInterface.class);
-            stub = new clientToFE(fe);
+            stub = new ClientToFE(fe);
         } catch (MalformedURLException e) {
             fe=null;
             return;

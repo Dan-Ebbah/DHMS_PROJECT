@@ -1,10 +1,8 @@
-package com.webservice.hi;
+package testClient;
 
-import javax.jws.WebMethod;
-
-public class clientToFE {
+public class ClientToFE {
     FrontEndInterface FE;
-    clientToFE(FrontEndInterface fe){
+    ClientToFE(FrontEndInterface fe){
         FE = fe;
     }
     String bookAppointment(String patientID, String type, String appointmentID){

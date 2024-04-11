@@ -1,6 +1,4 @@
-package com.webservice.hi;
-
-import java.util.ArrayList;
+package testClient;
 
 public class TestMessage {
     private int result;
