@@ -1,4 +1,4 @@
-package replicaManager;
+package com.webservice.hi;
 
 import javax.jws.WebMethod;
 import javax.jws.WebService;
@@ -21,4 +21,8 @@ public interface ReplicaInterface {
     String listAppointmentAvailability( String appointmentType);
     @WebMethod
     String swapAppointment( String patientID,  String oldAppointmentType,  String oldAppointmentID,  String newAppointmentType,  String newAppointmentID);
+    @WebMethod
+    public String getInfo();
+    @WebMethod
+    public void setInfo(String info);
 }
