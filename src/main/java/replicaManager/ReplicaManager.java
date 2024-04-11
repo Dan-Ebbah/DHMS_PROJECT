@@ -1,18 +1,19 @@
 package replicaManager;
 
+import javax.xml.namespace.QName;
+import javax.xml.ws.Service;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.net.*;
 
 public class ReplicaManager {
-    private static final String sequencer_IP = "192.168.2.17";
+    private static final String sequencer_IP = "127.0.0.1";
     private static final int sequencer_Port = 2222;
     private static final int BUFFER_SIZE = 1024;
     //should start the servers too
 
     public static void main(String[] args) {
+        Replica replica = new Replica();
+
         //should start and be ready to receive messages
         try {
             DatagramSocket rmSocket = new DatagramSocket(null);
@@ -46,8 +47,33 @@ public class ReplicaManager {
 
     private static void forwardToReplica(String request) {
         String[] splitRequestMessage = request.split(" ");
+        String city = splitRequestMessage[0];
+
+        connectToCityServerObject(city);
+
+
 
     }
+
+    private static void connectToCityServerObject(String city){
+        try {
+            String url = "http://localhost:8082/server/" + city.toLowerCase() + "?wsdl";
+            URL urlLink = new URL(url);
+            System.out.println("trying to connect to " + url);
+            QName qName = new QName("http://server/", "MontrealServerObjectImplService");
+            QName qName2 = new QName("http://server/", "MontrealServerObjectImplPort");
+            Service service = Service.create(urlLink, qName);
+            ReplicaInterface replicaInterface = service.getPort(qName2, ReplicaInterface.class);
+
+            String ss = replicaInterface.addAppointment(" ", "Dental", 1);
+            System.out.println("Result gotten: " + ss);
+            System.out.println();
+        } catch (Exception e) {
+            System.out.println("Error e:" + e.getMessage());
+        }
+
+    }
+
     public static void forwardToFrontEnd(DatagramPacket recPacket, DatagramSocket socket)
     {
         String sentence = new String(recPacket.getData(), 0, recPacket.getLength());
