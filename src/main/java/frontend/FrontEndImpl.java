@@ -21,6 +21,9 @@ public class FrontEndImpl implements FrontEndInterface {
     private static final int FE_RECEIVE_PORT_FOR_RM = 19000;
     private static final int FE_SEND_PORT_FOR_SEQUENCER = 19001;
     private static final int FE_SEND_PORT_FOR_RM = 19002;
+    private static final String SEQUENCER_IP = "";
+    private static final int SEQUENCER_PORT = 2222;
+
     private static final String[] RM_HOSTS = new String[] {"", "", "", ""};
     private static final int[] RM_PORTS = new int[] {1, 1, 1, 1};
     private static final String FAILURE = "FAILURE";
@@ -152,7 +155,8 @@ public class FrontEndImpl implements FrontEndInterface {
 
         String city = patientID.substring(0, 3);
         String operationName = "swapAppointment";
-        udpRequest = createUdpRequest(city, operationName, patientID, oldAppointmentID, oldAppointmentType, newAppointmentID, newAppointmentType);
+        udpRequest = createUdpRequest(city, operationName, patientID,
+                oldAppointmentID, oldAppointmentType, newAppointmentID, newAppointmentType);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -204,14 +208,11 @@ public class FrontEndImpl implements FrontEndInterface {
     }
 
     private void callSequencer() {
-        String ipAddressOfSequencer = "127.0.0.1"; // change it later
-        int portNumberOfSequencer = 9999; // change it later
-
         try {
             DatagramPacket datagram = new DatagramPacket(udpRequest.getBytes(StandardCharsets.UTF_8),
                     udpRequest.getBytes(StandardCharsets.UTF_8).length,
-                    InetAddress.getByName(ipAddressOfSequencer),
-                    portNumberOfSequencer);
+                    InetAddress.getByName(SEQUENCER_IP),
+                    SEQUENCER_PORT);
             resetState();
             socketToSendToSequencer.send(datagram);
         } catch (IOException e) {
@@ -269,7 +270,8 @@ public class FrontEndImpl implements FrontEndInterface {
                             if (j != i) {
                                 try {
                                     String crashMessage = "crash " + i;
-                                    DatagramPacket datagram = new DatagramPacket(crashMessage.getBytes(StandardCharsets.UTF_8),
+                                    DatagramPacket datagram = new DatagramPacket(
+                                            crashMessage.getBytes(StandardCharsets.UTF_8),
                                             crashMessage.getBytes(StandardCharsets.UTF_8).length,
                                             InetAddress.getByName(RM_HOSTS[j]),
                                             RM_PORTS[j]);
@@ -303,7 +305,8 @@ public class FrontEndImpl implements FrontEndInterface {
             if (!"".equals(responseFromRMs[i]) && !majorityResponse.equals(responseFromRMs[i])) {
                 try {
                     String crashMessage = "byzantine " + i;
-                    DatagramPacket datagram = new DatagramPacket(crashMessage.getBytes(StandardCharsets.UTF_8),
+                    DatagramPacket datagram = new DatagramPacket(
+                            crashMessage.getBytes(StandardCharsets.UTF_8),
                             crashMessage.getBytes(StandardCharsets.UTF_8).length,
                             InetAddress.getByName(RM_HOSTS[i]),
                             RM_PORTS[i]);
