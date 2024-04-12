@@ -25,7 +25,7 @@ public class FrontEndImpl implements FrontEndInterface {
     private static final int SEQUENCER_PORT = 2222;
 
     private static final String[] RM_HOSTS = new String[] {"", "", "", ""};
-    private static final int[] RM_PORTS = new int[] {1, 1, 1, 1};
+    private static final int[] RM_PORTS = new int[] {2222, 2222, 2222, 2222};
     private static final String FAILURE = "FAILURE";
 
     private final DatagramSocket socketToSendToSequencer;
@@ -266,20 +266,31 @@ public class FrontEndImpl implements FrontEndInterface {
                     && System.currentTimeMillis() - requestToSequencerTimeStamp >= 2 * timeTakenForFastestResponse) {
                 for (int i = 0; i < 4; i++) {
                     if ("".equals(responseFromRMs[i])) {
-                        for (int j = 0; j < 4; j++) {
-                            if (j != i) {
-                                try {
-                                    String crashMessage = "crash " + i;
-                                    DatagramPacket datagram = new DatagramPacket(
-                                            crashMessage.getBytes(StandardCharsets.UTF_8),
-                                            crashMessage.getBytes(StandardCharsets.UTF_8).length,
-                                            InetAddress.getByName(RM_HOSTS[j]),
-                                            RM_PORTS[j]);
-                                    socketToSendToRMs.send(datagram);
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            }
+//                        for (int j = 0; j < 4; j++) {
+//                            if (j != i) {
+//                                try {
+//                                    String crashMessage = "crash";
+//                                    DatagramPacket datagram = new DatagramPacket(
+//                                            crashMessage.getBytes(StandardCharsets.UTF_8),
+//                                            crashMessage.getBytes(StandardCharsets.UTF_8).length,
+//                                            InetAddress.getByName(RM_HOSTS[j]),
+//                                            RM_PORTS[j]);
+//                                    socketToSendToRMs.send(datagram);
+//                                } catch (IOException e) {
+//                                    throw new RuntimeException(e);
+//                                }
+//                            }
+//                        }
+                        try {
+                            String crashMessage = "crash";
+                            DatagramPacket datagram = new DatagramPacket(
+                                    crashMessage.getBytes(StandardCharsets.UTF_8),
+                                    crashMessage.getBytes(StandardCharsets.UTF_8).length,
+                                    InetAddress.getByName(RM_HOSTS[i]),
+                                    RM_PORTS[i]);
+                            socketToSendToRMs.send(datagram);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
                         }
                     }
                 }
@@ -304,7 +315,7 @@ public class FrontEndImpl implements FrontEndInterface {
         for (int i = 0; i < 4; i ++) {
             if (!"".equals(responseFromRMs[i]) && !majorityResponse.equals(responseFromRMs[i])) {
                 try {
-                    String crashMessage = "byzantine " + i;
+                    String crashMessage = "byzantine";
                     DatagramPacket datagram = new DatagramPacket(
                             crashMessage.getBytes(StandardCharsets.UTF_8),
                             crashMessage.getBytes(StandardCharsets.UTF_8).length,
