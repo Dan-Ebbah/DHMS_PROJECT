@@ -6,6 +6,7 @@ import replica3.model.Appointment;
 import replica3.model.AppointmentType;
 import replica3.model.HospitalType;
 import replica3.model.UDPServerInfo;
+import replicaManager.ReplicaInterface;
 
 import javax.jws.WebService;
 import javax.jws.soap.SOAPBinding;
