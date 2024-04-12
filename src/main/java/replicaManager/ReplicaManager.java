@@ -5,29 +5,30 @@ import javax.xml.ws.Service;
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ReplicaManager {
     private static final String sequencer_IP = "127.0.0.1";
     private static final int sequencer_Port = 2222;
     private static final int BUFFER_SIZE = 1024;
+    public static final int CRASH_PORT = 3333;
 
     private static Process process;
 
+    private static Replica replica;
     //should start the servers too
 
     public static void main(String[] args) {
-        Replica replica = new Replica();
+        replica = new Replica();
+        new Thread(ReplicaManager::startNewThreadForOtherRMs);
 
         //should start and be ready to receive messages
         try {
-            DatagramSocket rmSocket = new DatagramSocket(null);
-            rmSocket.bind(new InetSocketAddress(sequencer_IP, sequencer_Port));
+            DatagramSocket rmSocket = getDatagramSocket(sequencer_Port);
             System.out.println("Replica Manager started...");
 
             while (true) {
-                byte[] receiveData = new byte[BUFFER_SIZE];
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                rmSocket.receive(receivePacket);
+                DatagramPacket receivePacket = getDatagramPacket(rmSocket);
                 String messageReceived = new String(receivePacket.getData(), 0, receivePacket.getLength());
                 acknowledgeReceipt(receivePacket, rmSocket);
                 String[] splitMessage = messageReceived.split(":");
@@ -37,6 +38,44 @@ public class ReplicaManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static void startNewThreadForOtherRMs() {
+        try {
+            DatagramSocket socket = getDatagramSocket(CRASH_PORT);
+            System.out.println("Started Listening for Crashes on port "+ CRASH_PORT);
+
+            while (true) {
+                DatagramPacket receivePacket = getDatagramPacket(socket);
+                String messageReceived = new String(receivePacket.getData(), 0, receivePacket.getLength());
+
+                // if needed to get data from RM
+                ConcurrentHashMap concurrentHashMap = convertBackToHashMap(getReplicaData());
+                replica = new Replica(concurrentHashMap);
+
+                //if restartReplica is needed then
+                startReplica();
+            }
+        } catch (IOException io) {
+            System.out.println(io.getMessage());
+        }
+    }
+
+    private static ConcurrentHashMap convertBackToHashMap(String replicaData) {
+        return null; //Provide the Appointment type here
+    }
+
+    private static DatagramPacket getDatagramPacket(DatagramSocket socket) throws IOException {
+        byte[] receiveData = new byte[BUFFER_SIZE];
+        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        socket.receive(receivePacket);
+        return receivePacket;
+    }
+
+    private static DatagramSocket getDatagramSocket(int crashPort) throws SocketException {
+        DatagramSocket socket = new DatagramSocket(null);
+        socket.bind(new InetSocketAddress(sequencer_IP, crashPort));
+        return socket;
     }
 
     private static void acknowledgeReceipt(DatagramPacket recPacket, DatagramSocket socket) throws IOException {
@@ -76,6 +115,10 @@ public class ReplicaManager {
             System.out.println("Error e:" + e.getMessage());
         }
 
+    }
+
+    private static String getReplicaData() {
+        return replica.getAllDataFromReplica();
     }
 
     public static void forwardToFrontEnd(DatagramPacket recPacket, DatagramSocket socket)
