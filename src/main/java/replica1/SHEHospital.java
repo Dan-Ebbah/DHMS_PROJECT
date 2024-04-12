@@ -19,6 +19,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
@@ -548,12 +549,57 @@ public class SHEHospital implements Hospital {
     }
 
     @Override
-    public String getInfo() {
-        return null;
+    public String getInfo(){
+        String info;
+        info = hashMapToString(appointments);
+        if(info.equals("")){
+            return info;
+        }
+        return info.substring(1);
+    }
+
+    private String hashMapToString(ConcurrentHashMap<String, ConcurrentHashMap<String, AppointmentDetails>> appointments){
+        String str = "";
+        appointments.forEach((type, idDetails) -> {
+            idDetails.forEach((id, details) ->  {
+                str.concat(";"+ id +":"                //appointmentID
+                        + type +":"    //appointment type
+                        + details.getCapacity() +":"           //appointment capacity
+                        + usersListToInfo(details.getPatientIDList()));
+            });
+        });
+        return str;
+    }
+
+    private String usersListToInfo(List<String> users){
+        String str = "";
+        for(String s : users){
+            if(!str.equals("")){
+                str = str.concat(","+s);
+            }else{
+                str = str.concat(s);
+            }
+        }
+        return str;
     }
 
     @Override
-    public void setInfo(String info) {
-
+    public void setInfo(String info){
+        appointments.clear();
+        appointments.put("Physician", new ConcurrentHashMap<>());
+        appointments.put("Surgeon", new ConcurrentHashMap<>());
+        appointments.put("Dental",new ConcurrentHashMap<>());
+        if(info.equals("")){
+            return;
+        }
+        String[] appointments1 = info.split(";");
+        for(String appointment: appointments1){
+            String[] appointmentInfo = appointment.split(":");
+            String id =appointmentInfo[0];
+            String type = appointmentInfo[1];
+            int capacity = Integer.parseInt(appointmentInfo[2]);
+            String[] users = appointmentInfo[3].split(",");
+            appointments.get(type).put(id, new AppointmentDetails(Arrays.asList(users), capacity));
+        }
     }
 }

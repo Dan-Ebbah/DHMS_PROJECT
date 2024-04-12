@@ -181,14 +181,11 @@ public class HospitalUtil {
         final StringBuilder resultString = new StringBuilder();
 
         availabilityList.forEach((city, idCapacityMap) -> {
-            resultString.append(" ").append(city);
-            StringBuilder idCapacityString = new StringBuilder(" - ");
-            idCapacityMap.forEach((id, capacity) -> idCapacityString.append(id).append(" ").append(capacity).append(", "));
-            resultString.append(idCapacityString);
+            idCapacityMap.forEach((id, capacity) -> resultString.append(id).append(":").append(capacity).append(","));
         });
 
         if (resultString.length() != 0) {
-            resultString.replace(resultString.length() - 2, resultString.length(), ". ");
+            resultString.replace(resultString.length() - 1, resultString.length(), "");
         }
 
         return resultString.toString();
