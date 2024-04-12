@@ -21,8 +21,11 @@ public class FrontEndImpl implements FrontEndInterface {
     private static final int FE_RECEIVE_PORT_FOR_RM = 19000;
     private static final int FE_SEND_PORT_FOR_SEQUENCER = 19001;
     private static final int FE_SEND_PORT_FOR_RM = 19002;
+    private static final String SEQUENCER_IP = "";
+    private static final int SEQUENCER_PORT = 2222;
+
     private static final String[] RM_HOSTS = new String[] {"", "", "", ""};
-    private static final int[] RM_PORTS = new int[] {1, 1, 1, 1};
+    private static final int[] RM_PORTS = new int[] {2222, 2222, 2222, 2222};
     private static final String FAILURE = "FAILURE";
 
     private final DatagramSocket socketToSendToSequencer;
@@ -64,8 +67,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = patientID.substring(0, 3);
         String operationName = "bookAppointment";
-        udpRequest = createUdpRequest(operationName, patientID, appointmentID, appointmentType);
+        udpRequest = createUdpRequest(city, operationName, patientID, appointmentID, appointmentType);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -76,8 +80,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = patientID.substring(0, 3);
         String operationName = "getAppointmentSchedule";
-        udpRequest = createUdpRequest(operationName, patientID, patientID);
+        udpRequest = createUdpRequest(city, operationName, patientID, patientID);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -88,8 +93,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = patientID.substring(0, 3);
         String operationName = "cancelAppointment";
-        udpRequest = createUdpRequest(operationName, patientID, appointmentID);
+        udpRequest = createUdpRequest(city, operationName, patientID, appointmentID);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -102,8 +108,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = adminID.substring(0, 3);
         String operationName = "addAppointment";
-        udpRequest = createUdpRequest(operationName, appointmentID, appointmentType, String.valueOf(capacity));
+        udpRequest = createUdpRequest(city, operationName, appointmentID, appointmentType, String.valueOf(capacity));
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -116,8 +123,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = adminID.substring(0, 3);
         String operationName = "removeAppointment";
-        udpRequest = createUdpRequest(operationName, appointmentID, appointmentType);
+        udpRequest = createUdpRequest(city, operationName, appointmentID, appointmentType);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -128,8 +136,9 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = adminID.substring(0, 3);
         String operationName = "listAppointmentAvailability";
-        udpRequest = createUdpRequest(operationName, appointmentType);
+        udpRequest = createUdpRequest(city, operationName, appointmentType);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -144,8 +153,10 @@ public class FrontEndImpl implements FrontEndInterface {
             return FAILURE;
         }
 
+        String city = patientID.substring(0, 3);
         String operationName = "swapAppointment";
-        udpRequest = createUdpRequest(operationName, patientID, oldAppointmentID, oldAppointmentType, newAppointmentID, newAppointmentType);
+        udpRequest = createUdpRequest(city, operationName, patientID,
+                oldAppointmentID, oldAppointmentType, newAppointmentID, newAppointmentType);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -189,6 +200,7 @@ public class FrontEndImpl implements FrontEndInterface {
         }
         requestId ++;
         udpRequestStringBuilder.append(requestId);
+        udpRequestStringBuilder.append(" :");
         for (String requestElement: requestElements) {
             udpRequestStringBuilder.append(" ").append(requestElement);
         }
@@ -196,14 +208,11 @@ public class FrontEndImpl implements FrontEndInterface {
     }
 
     private void callSequencer() {
-        String ipAddressOfSequencer = "127.0.0.1"; // change it later
-        int portNumberOfSequencer = 9999; // change it later
-
         try {
             DatagramPacket datagram = new DatagramPacket(udpRequest.getBytes(StandardCharsets.UTF_8),
                     udpRequest.getBytes(StandardCharsets.UTF_8).length,
-                    InetAddress.getByName(ipAddressOfSequencer),
-                    portNumberOfSequencer);
+                    InetAddress.getByName(SEQUENCER_IP),
+                    SEQUENCER_PORT);
             resetState();
             socketToSendToSequencer.send(datagram);
         } catch (IOException e) {
@@ -257,19 +266,31 @@ public class FrontEndImpl implements FrontEndInterface {
                     && System.currentTimeMillis() - requestToSequencerTimeStamp >= 2 * timeTakenForFastestResponse) {
                 for (int i = 0; i < 4; i++) {
                     if ("".equals(responseFromRMs[i])) {
-                        for (int j = 0; j < 4; j++) {
-                            if (j != i) {
-                                try {
-                                    String crashMessage = "crash " + i;
-                                    DatagramPacket datagram = new DatagramPacket(crashMessage.getBytes(StandardCharsets.UTF_8),
-                                            crashMessage.getBytes(StandardCharsets.UTF_8).length,
-                                            InetAddress.getByName(RM_HOSTS[j]),
-                                            RM_PORTS[j]);
-                                    socketToSendToRMs.send(datagram);
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            }
+//                        for (int j = 0; j < 4; j++) {
+//                            if (j != i) {
+//                                try {
+//                                    String crashMessage = "crash";
+//                                    DatagramPacket datagram = new DatagramPacket(
+//                                            crashMessage.getBytes(StandardCharsets.UTF_8),
+//                                            crashMessage.getBytes(StandardCharsets.UTF_8).length,
+//                                            InetAddress.getByName(RM_HOSTS[j]),
+//                                            RM_PORTS[j]);
+//                                    socketToSendToRMs.send(datagram);
+//                                } catch (IOException e) {
+//                                    throw new RuntimeException(e);
+//                                }
+//                            }
+//                        }
+                        try {
+                            String crashMessage = "crash";
+                            DatagramPacket datagram = new DatagramPacket(
+                                    crashMessage.getBytes(StandardCharsets.UTF_8),
+                                    crashMessage.getBytes(StandardCharsets.UTF_8).length,
+                                    InetAddress.getByName(RM_HOSTS[i]),
+                                    RM_PORTS[i]);
+                            socketToSendToRMs.send(datagram);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
                         }
                     }
                 }
@@ -294,8 +315,9 @@ public class FrontEndImpl implements FrontEndInterface {
         for (int i = 0; i < 4; i ++) {
             if (!"".equals(responseFromRMs[i]) && !majorityResponse.equals(responseFromRMs[i])) {
                 try {
-                    String crashMessage = "byzantine " + i;
-                    DatagramPacket datagram = new DatagramPacket(crashMessage.getBytes(StandardCharsets.UTF_8),
+                    String crashMessage = "byzantine";
+                    DatagramPacket datagram = new DatagramPacket(
+                            crashMessage.getBytes(StandardCharsets.UTF_8),
                             crashMessage.getBytes(StandardCharsets.UTF_8).length,
                             InetAddress.getByName(RM_HOSTS[i]),
                             RM_PORTS[i]);

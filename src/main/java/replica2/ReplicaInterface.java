@@ -1,4 +1,4 @@
-package replicaManager;
+package replica2;
 
 import javax.jws.WebMethod;
 import javax.jws.WebService;

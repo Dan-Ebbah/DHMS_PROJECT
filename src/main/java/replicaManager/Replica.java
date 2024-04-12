@@ -4,6 +4,7 @@ package replicaManager;
 import javax.xml.ws.Endpoint;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class Replica {
@@ -17,6 +18,10 @@ public class Replica {
     public Replica(List<ServerObjectImpl> serverObjects) {
         _serverObjects = serverObjects;
         publishAndStartServerObjects();
+    }
+
+    public Replica(ConcurrentHashMap hashMap) {
+        //  spins new server objects with this hasMap
     }
 
     public void publishAndStartServerObjects() {
@@ -33,5 +38,21 @@ public class Replica {
             System.err.println("ERROR: " + e);
             e.printStackTrace(System.out);
         }
+    }
+
+    public String getAllDataFromReplica()
+    {
+        StringBuilder result = new StringBuilder();
+        for (ServerObjectImpl serverObject: _serverObjects) {
+            String serverName = serverObject.getServerName();
+
+            result.append(serverName);
+            result.append("/");
+
+            String serverObjectInfo = serverObject.getInfo();
+            result.append(serverObjectInfo);
+            result.append("\\"); //seprates hospitals
+        }
+        return result.toString();
     }
 }

@@ -1,4 +1,4 @@
-package com.webservice.hi;
+package testClient;
 
 import javax.jws.WebMethod;
 import javax.jws.WebService;
