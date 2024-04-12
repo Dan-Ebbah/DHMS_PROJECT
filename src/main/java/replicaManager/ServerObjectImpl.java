@@ -41,6 +41,17 @@ public class ServerObjectImpl implements ReplicaInterface {
         return null;
     }
 
+    @Override
+    public String getInfo() {
+        // I don't know what should be inside this, but there is a compile error without this method
+        return null;
+    }
+
+    @Override
+    public void setInfo(String info) {
+        // I don't know what should be inside this, but there is a compile error without this method
+    }
+
     public String getServerName() {
         return _serverName;
     }

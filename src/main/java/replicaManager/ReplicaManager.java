@@ -2,6 +2,7 @@ package replicaManager;
 
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
+import java.io.File;
 import java.io.IOException;
 import java.net.*;
 
@@ -9,6 +10,9 @@ public class ReplicaManager {
     private static final String sequencer_IP = "127.0.0.1";
     private static final int sequencer_Port = 2222;
     private static final int BUFFER_SIZE = 1024;
+
+    private static Process process;
+
     //should start the servers too
 
     public static void main(String[] args) {
@@ -90,5 +94,19 @@ public class ReplicaManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void startReplica() {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder("java", "-cp", "replica1-shanmukha.jar", "replica1.HospitalServer");
+            processBuilder.directory(new File("C:\\Users\\shanm\\IdeaProjects\\DHMS_PROJECT\\src\\main\\resources\\"));
+            process = processBuilder.start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void stopReplica() {
+        process.destroyForcibly();
     }
 }
