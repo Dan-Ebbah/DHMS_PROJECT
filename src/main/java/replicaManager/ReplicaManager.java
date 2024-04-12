@@ -8,7 +8,6 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ReplicaManager {
@@ -18,14 +17,9 @@ public class ReplicaManager {
     public static final int CRASH_PORT = 3333;
 
     private static Process process;
-    private static Replica replica;
-
-    private static ReplicaManager [] otherRMs;
-    //should start the servers too
 
     public static void main(String[] args) {
-//        replica = new Replica();
-        startReplica("replica3");
+        startReplica("replica1");
         new Thread(ReplicaManager::startNewThreadForOtherRMs).start();
 
         //should start and be ready to receive messages
@@ -43,13 +37,15 @@ public class ReplicaManager {
                     case "crash":
                         if (isCrashed()) {
                             List<String> dataList = getOtherRMsData();
-                            setDataAndStartReplica(dataList);
+                            startReplica("replica1");
+                            setData(dataList);
                         }
-
                     case "byzantine":
                         // do something: start a new replica with the Db from other RMs
                         List<String> dataList = getOtherRMsData();
-                        setDataAndStartReplica(dataList);
+                        stopReplica();
+                        startReplica("replica1");
+                        setData(dataList);
                     default:
                         forwardToReplica(splitMessage[1]);
                 }
@@ -59,7 +55,7 @@ public class ReplicaManager {
         }
     }
 
-    private static void setDataAndStartReplica(List<String> dataList) {
+    private static void setData(List<String> dataList) {
         String concurrentHashMap;
         if (dataList.get(0).equalsIgnoreCase(dataList.get(1)) && dataList.get(0).equalsIgnoreCase(dataList.get(2))) {
             concurrentHashMap = (dataList.get(0));
@@ -69,11 +65,14 @@ public class ReplicaManager {
             concurrentHashMap = (dataList.get(1));
         }
 
-        for (String city : replica.getServerWebDetails().keySet()){
+        String[] concurrentHashMapCities =  concurrentHashMap.split("/");
+
+        int i = 0;
+        for (String city : new String[] {"MTL", "QUE", "SHE"}) {
             ReplicaInterface replicaInterface = connectToCityServerObject(city);
-            replicaInterface.setInfo(concurrentHashMap);
+            replicaInterface.setInfo(concurrentHashMapCities[i]);
+            i ++;
         }
-        startReplica("replica3");
     }
 
     private static List<String> getOtherRMsData() {
@@ -130,6 +129,7 @@ public class ReplicaManager {
     }
 
     private static boolean isCrashed() {
+        // I think calling a replica when it is down causes an exception, so handle it
         String result = forwardToReplica("montreal addAppointment MTLA1111 DENTAL 1");
         return result.equalsIgnoreCase("SUCCESSFUL");
     }
@@ -182,9 +182,9 @@ public class ReplicaManager {
 
     private static String getReplicaData() {
         StringBuilder hospitalsData = new StringBuilder();
-        for (String city : replica.getServerWebDetails().keySet()) {
+        for (String city : new String[]{"MTL", "QUE", "SHE"}) {
             ReplicaInterface replicaInterface = connectToCityServerObject(city);
-            hospitalsData.append( replicaInterface.getInfo());
+            hospitalsData.append(replicaInterface.getInfo());
             hospitalsData.append("\\");
         }
         return hospitalsData.toString();
@@ -212,8 +212,6 @@ public class ReplicaManager {
 
         String result = callOperation(replicaInterface, operation, Arrays.copyOfRange(splitRequestMessage, 2, splitRequestMessage.length));
         return result;
-
-
     }
 
     private static String callOperation(ReplicaInterface replicaInterface, String operation, String [] parameters) {
@@ -238,30 +236,14 @@ public class ReplicaManager {
 
     private static ReplicaInterface connectToCityServerObject(String city){
         try {
-            Map<String, QName> serverWebDetails = replica.getServerWebDetails();
-            String url = "http://localhost:8082/server/" + city.toLowerCase() + "?wsdl";
+            String url = "http://localhost:8080/" + city.toLowerCase() + "Hospital" + "?wsdl";
             URL urlLink = new URL(url);
             System.out.println("trying to connect to " + url);
-            String s = getServerObjectService(serverWebDetails, city);
-            QName qName = serverWebDetails.get(city);
-//            QName qName2 = new QName("http://server/", "MontrealServerObjectImplPort");
+            QName qName = new QName("http://replica1/", city + "HospitalService");
             Service service = Service.create(urlLink, qName);
             return service.getPort(ReplicaInterface.class);
         } catch (Exception e) {
             System.out.println("Error e:" + e.getMessage());
-        }
-
-        return null;
-    }
-
-    private static String getServerObjectService(Map<String, QName> serverWebDetails, String city) {
-        switch (city) {
-            case "montreal":
-                return "MontrealServerObjectImplService";
-            case "sherbrooke":
-                return "SherbrookeServerObjectImplService";
-            case "quebec":
-                return "QuebecServerObjectImplService";
         }
         return null;
     }
