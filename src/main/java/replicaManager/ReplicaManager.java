@@ -130,7 +130,7 @@ public class ReplicaManager {
 
     private static boolean isCrashed() {
         // I think calling a replica when it is down causes an exception, so handle it
-        String result = forwardToReplica("montreal addAppointment MTLA1111 DENTAL 1");
+        String result = forwardToReplica("MTL addAppointment MTLA1111 DENTAL 1");
         return result.equalsIgnoreCase("SUCCESSFUL");
     }
 
@@ -239,7 +239,7 @@ public class ReplicaManager {
             String url = "http://localhost:8080/" + city.toLowerCase() + "Hospital" + "?wsdl";
             URL urlLink = new URL(url);
             System.out.println("trying to connect to " + url);
-            QName qName = new QName("http://replica1/", city + "HospitalService");
+            QName qName = new QName("http://replica1/", city.toLowerCase() + "HospitalService");
             Service service = Service.create(urlLink, qName);
             return service.getPort(ReplicaInterface.class);
         } catch (Exception e) {
