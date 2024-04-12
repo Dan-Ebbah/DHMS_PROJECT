@@ -385,7 +385,7 @@ public class AppointmentManagerImpl implements AppointmentManager {
 
     private String boolToMessage(boolean b){
         if(b){
-            return "Success";
+            return "Successful";
         }else{
             return "Failure";
         }

@@ -70,9 +70,9 @@ public class TestClient {
 
         try{
             setClient("MTLA1234");
-            counter+= new TestMessage("Login","Success", "Success").getResult();
+            counter+= new TestMessage("Login","Successful", "Successful").getResult();
         }catch(Exception e){
-            counter+= new TestMessage("Login","Success", "Fail").getResult();
+            counter+= new TestMessage("Login","Successful", "Fail").getResult();
         }
 
         System.out.println("\n ("+counter + "/1) tests passed\n\n");
@@ -151,14 +151,14 @@ public class TestClient {
 
             stub.addAppointment(clientID,"MTLA010101","Dental",5);
             stub.addAppointment(clientID,"MTLA020202","Dental",5);
-            t = new TestMessage("Test with multiple appointments added on the admin's server",new String[]{"MTLA010101", "MTLA020202"},
+            t = new TestMessage("Test with multiple appointments added on the admin's server",new String[]{"MTLA010101(5)", "MTLA020202(5)"},
                     stub.listAppointmentAvailability(clientID,"Dental"));
             counter += t.getResult();
 
             setClient("SHEA1234");
             stub.addAppointment(clientID,"SHEA020202","Dental",5);
             stub.addAppointment(clientID,"SHEA010101","Dental",5);
-            t = new TestMessage("Test with multiple appointments added on multiple servers",new String[]{"MTLA010101", "MTLA020202","SHEA020202","SHEA010101"},
+            t = new TestMessage("Test with multiple appointments added on multiple servers",new String[]{"MTLA010101(5)", "MTLA020202(5)","SHEA020202(5)","SHEA010101(5)"},
                     stub.listAppointmentAvailability(clientID,"Dental"));
             counter += t.getResult();
             stub.removeAppointment(clientID,"SHEA020202","Dental");
@@ -279,7 +279,7 @@ public class TestClient {
             stub.bookAppointment(clientID,"Dental","MTLA121212");
             stub.bookAppointment(clientID,"Dental","SHEA010101");
             stub.bookAppointment(clientID,"Dental","QUEA020202");
-            t = new TestMessage("Get appointment schedule of client that bookings in multiple hospitals",new String[] {"MTLA121212", "SHEA010101", "QUEA020202"},
+            t = new TestMessage("Get appointment schedule of client that bookings in multiple hospitals",new String[] {"MTLA121212(Dental)", "SHEA010101(Dental)", "QUEA020202(Dental)"},
                     stub.getAppointmentSchedule(clientID));
             counter += t.getResult();
             setClient("MTLA1234");

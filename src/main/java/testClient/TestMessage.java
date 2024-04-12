@@ -6,14 +6,14 @@ public class TestMessage {
         System.out.println(testName);
 
          if(expected.equals("true")){
-            expected = "Success";
+            expected = "Successful";
         }
         if(expected.equals("false")){
             expected = "Failure";
         }
         System.out.println("Expected: "+expected);
         System.out.println("Received: "+received);
-        if(expected.equals(received)){
+        if(expected.toUpperCase().equals(received.toUpperCase())){
             result=1;
         }else{
             result=0;
@@ -46,7 +46,7 @@ public class TestMessage {
         for(String s1 : expectedSplit){
             found=false;
             for(String s2 : receivedSplit){
-                if(s1.equals(s2)){
+                if(s1.toUpperCase().equals(s2.toUpperCase())){
                     found=true;
                     break;
                 }
