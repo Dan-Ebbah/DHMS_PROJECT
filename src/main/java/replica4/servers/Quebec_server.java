@@ -399,13 +399,13 @@ public class  Quebec_server implements Interface {
 
     public static void admin_log1(String add, String status,String ID) {
 
-        try (BufferedWriter o = new BufferedWriter(new FileWriter("admin_file.txt", true))) {
-
-            o.append("---TIME--->").append(strDate).append("---RESPONSE--->").append(add).append("---ID--->").append(ID).append("---STATUS--->").append(status).append("\n");
-        } catch (IOException e) {
-
-            e.printStackTrace();
-        }
+//        try (BufferedWriter o = new BufferedWriter(new FileWriter("admin_file.txt", true))) {
+//
+//            o.append("---TIME--->").append(strDate).append("---RESPONSE--->").append(add).append("---ID--->").append(ID).append("---STATUS--->").append(status).append("\n");
+//        } catch (IOException e) {
+//
+//            e.printStackTrace();
+//        }
 
 
 
