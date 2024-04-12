@@ -54,7 +54,7 @@ public class ReplicaManager {
                 replica = new Replica(concurrentHashMap);
 
                 //if restartReplica is needed then
-                startReplica();
+                startReplica("replica1");
             }
         } catch (IOException io) {
             System.out.println(io.getMessage());
@@ -139,11 +139,31 @@ public class ReplicaManager {
         }
     }
 
-    public static void startReplica() {
+    public static void startReplica(String replica) {
+        ProcessBuilder processBuilder;
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder("java", "-cp", "replica1-shanmukha.jar", "replica1.HospitalServer");
-            processBuilder.directory(new File("C:\\Users\\shanm\\IdeaProjects\\DHMS_PROJECT\\src\\main\\resources\\"));
-            process = processBuilder.start();
+            switch (replica) {
+                case "replica1":
+                    processBuilder = new ProcessBuilder("java", "-cp", "replica1-shanmukha.jar", "replica1.HospitalServer");
+                    processBuilder.directory(new File("C:\\Users\\shanm\\IdeaProjects\\DHMS_PROJECT\\src\\main\\resources\\"));
+                    process = processBuilder.start();
+                    break;
+                case "replica2":
+                    processBuilder = new ProcessBuilder("java", "-cp", "replica2-alain.jar", "replica2.Servers");
+                    processBuilder.directory(new File("C:\\Users\\shanm\\IdeaProjects\\DHMS_PROJECT\\src\\main\\resources\\"));
+                    process = processBuilder.start();
+                    break;
+                case "replica3":
+                    processBuilder = new ProcessBuilder("java", "-cp", "replica3-daniel.jar", "replica3.<Class>");
+                    processBuilder.directory(new File("C:\\Users\\shanm\\IdeaProjects\\DHMS_PROJECT\\src\\main\\resources\\"));
+                    process = processBuilder.start();
+                    break;
+                case "replica4":
+                    processBuilder = new ProcessBuilder("java", "-cp", "replica4-naveen.jar", "replica4.<Class>");
+                    processBuilder.directory(new File("C:\\Users\\shanm\\IdeaProjects\\DHMS_PROJECT\\src\\main\\resources\\"));
+                    process = processBuilder.start();
+                    break;
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
