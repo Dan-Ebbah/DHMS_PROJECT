@@ -1,4 +1,4 @@
-package com.webservice.hi;
+package replica2;
 
 import java.io.Serializable;
 import java.text.DateFormat;
