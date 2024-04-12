@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Sequencer {
     private static final AtomicInteger SEQUENCER_ID = new AtomicInteger(0);
-    private static final String SEQUENCER_IP = "192.168.2.17";
+    private static final String SEQUENCER_IP = "192.168.43.158";
     private static final int SEQUENCER_RECEIVE_PORT = 2222;
     private static final int[] RM_PORTS = {5000, 5001, 5002, 5003}; // Ports of the replica managers
     private static final String[] RM_HOSTS = {"", "", "", ""};
@@ -52,22 +52,24 @@ public class Sequencer {
     }
 
     private static void sendMessage(DatagramSocket socket, String message, int rmNumber) {
-        try {
-            byte[] data = message.getBytes();
-            DatagramPacket packet = new DatagramPacket(data, data.length,
-                    InetAddress.getByName(RM_HOSTS[rmNumber]), RM_PORTS[rmNumber]);
-            socket.send(packet);
+//        try {
+//            byte[] data = message.getBytes();
+//            DatagramPacket packet = new DatagramPacket(data, data.length,
+//                    InetAddress.getByName(RM_HOSTS[rmNumber]), RM_PORTS[rmNumber]);
+//            socket.send(packet);
+//
+//            boolean receivedAck = false;
+//            new Thread(() -> receiveAck(socket)).start();
+//            sleep(ACK_TIMEOUT);
+//
+//            if (!receivedAck) {
+//                sendMessage(socket, message, rmNumber);
+//            }
+//        } catch (IOException | InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
 
-            boolean receivedAck = false;
-            new Thread(() -> receiveAck(socket)).start();
-            sleep(ACK_TIMEOUT);
-
-            if (!receivedAck) {
-                sendMessage(socket, message, rmNumber);
-            }
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        System.out.println(message);
     }
 
     private static void receiveAck(DatagramSocket socket) {
