@@ -234,11 +234,11 @@ public class TestClient {
 
             setClient("MTLA1234");
             t = new TestMessage("cancel non-existing booking","false",
-                    stub.cancelAppointment(clientID,"Dental","MTLA11212"));
+                    stub.cancelAppointment(clientID,"MTLA11212"));
             counter += t.getResult();
 
             t = new TestMessage("cancel existing booking","true",
-                    stub.cancelAppointment(clientID,"Dental","MTLA121212"));
+                    stub.cancelAppointment(clientID,"MTLA121212"));
             counter += t.getResult();
 
             stub.removeAppointment(clientID,"MTLA121212","Dental");

@@ -1,5 +1,6 @@
 package replica4;
 
+import replica1.ReplicaManager1;
 import replicaManager.ReplicaInterface;
 
 import javax.xml.namespace.QName;
@@ -25,6 +26,8 @@ public class ReplicaManager4 {
     private static Process process;
 
     public static void main(String[] args) {
+        shutDownGracefullyAtTheTimeOfTermination();
+
         startReplica("replica4");
         new Thread(ReplicaManager4::startNewThreadForOtherRMs).start();
 
@@ -293,5 +296,9 @@ public class ReplicaManager4 {
 
     public static void stopReplica() {
         process.destroyForcibly();
+    }
+
+    public static void shutDownGracefullyAtTheTimeOfTermination() {
+        Runtime.getRuntime().addShutdownHook(new Thread(ReplicaManager1::stopReplica));
     }
 }

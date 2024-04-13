@@ -1,7 +1,5 @@
 package sequencer;
 
-import static java.lang.Thread.sleep;
-
 import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;

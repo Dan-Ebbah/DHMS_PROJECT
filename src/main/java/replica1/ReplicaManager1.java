@@ -24,7 +24,10 @@ public class ReplicaManager1 {
 
     private static Process process;
 
+
     public static void main(String[] args) {
+        shutDownGracefullyAtTheTimeOfTermination();
+
         startReplica("replica1");
         new Thread(ReplicaManager1::startNewThreadForOtherRMs).start();
 
@@ -292,6 +295,11 @@ public class ReplicaManager1 {
     }
 
     public static void stopReplica() {
+        System.out.println("Stopping replica...");
         process.destroyForcibly();
+    }
+
+    public static void shutDownGracefullyAtTheTimeOfTermination() {
+        Runtime.getRuntime().addShutdownHook(new Thread(ReplicaManager1::stopReplica));
     }
 }
