@@ -211,7 +211,7 @@ public class TestClient {
             setClient("MTLA1234");
             stub.bookAppointment(clientID,"Dental","SHEA101212");
             stub.bookAppointment(clientID,"Dental","SHEA111212");
-            t = new TestMessage("Book more than 3 appointment in a week at another hospital","true",
+            t = new TestMessage("Book more than 3 appointment in a week at another hospital","false",
                     stub.bookAppointment(clientID,"Dental","SHEA131212"));
             counter += t.getResult();
 
