@@ -1,4 +1,4 @@
-package replica3;
+package replica3.server;
 
 import replica3.database.HashMapImpl;
 import replica3.model.Appointment;

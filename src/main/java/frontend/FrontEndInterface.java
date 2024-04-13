@@ -9,7 +9,7 @@ import javax.jws.soap.SOAPBinding;
 public interface FrontEndInterface {
 
     @WebMethod
-    String bookAppointment (String patientID, String appointmentID, String appointmentType);
+    String bookAppointment (String patientID, String appointmentType, String appointmentID);
     @WebMethod
     String getAppointmentSchedule (String patientID);
     @WebMethod

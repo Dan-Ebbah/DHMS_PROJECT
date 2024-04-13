@@ -1,6 +1,5 @@
 package replica2;
 
-import javax.jws.WebMethod;
 import javax.jws.WebService;
 import javax.jws.soap.SOAPBinding;
 import javax.xml.namespace.QName;
@@ -12,10 +11,12 @@ import java.net.URL;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-@WebService(endpointInterface = "com.webservice.hi.AppointmentManager")
+@WebService(endpointInterface = "replica2.AppointmentManager")
 @SOAPBinding(style = SOAPBinding.Style.RPC)
 public class AppointmentManagerImpl implements AppointmentManager {
     private ConcurrentHashMap<Appointment.AppointmentType, ConcurrentHashMap<String, Appointment>> appointments;
@@ -26,7 +27,7 @@ public class AppointmentManagerImpl implements AppointmentManager {
     public AppointmentManagerImpl(String hospitalCode) {
         super();
         code = hospitalCode;
-        logPath = "logs/servers/"+ code+".txt";
+        logPath = "C:/Users/potat/Desktop/assignments/comp6231/project/src/main/java/replica2/" + code +".txt";
         File logFile = new File(logPath);
         logFile.getParentFile().mkdirs();
         try {
@@ -375,7 +376,7 @@ public class AppointmentManagerImpl implements AppointmentManager {
     private AppointmentManager getStub(String name){
         try {
             URL url = new URL("http://localhost:8080/"+name+"?wsdl");
-            QName qname = new QName("http://hi.webservice.com/","AppointmentManagerImplService");
+            QName qname = new QName("http://replica2/","AppointmentManagerImplService");
             Service service = Service.create(url,qname);
             return service.getPort(AppointmentManager.class);
         } catch (MalformedURLException e) {
@@ -421,9 +422,27 @@ public class AppointmentManagerImpl implements AppointmentManager {
                 param = a.getType().toString();
             }
             if(!str.equals("")){
+                str = str.concat(","+a.getID()+":"+param);
+            }else{
+                str = str.concat(a.getID()+":"+param);
+            }
+        }
+        return str;
+    }
+
+    String arraylistToMessageForSchedule(ArrayList<Appointment> appointments,boolean isList){
+        String str = "";
+        for(Appointment a : appointments){
+            String param;
+            if(isList){
+                param=a.getCapacity()+"";
+            }else{
+                param = a.getType().toString();
+            }
+            if(!str.equals("")){
                 str = str.concat(","+a.getID()+"("+param+")");
             }else{
-                str=a.getID();
+                str = str.concat(a.getID()+"("+param+")");
             }
         }
         return str;
@@ -432,7 +451,7 @@ public class AppointmentManagerImpl implements AppointmentManager {
     @Override
     public String getAppointmentSchedule(String patientID) {
         try {
-            return arraylistToMessage(Converter.ByteArrayToArrayList(getAppointmentSchedule1(patientID)),false);
+            return arraylistToMessageForSchedule(Converter.ByteArrayToArrayList(getAppointmentSchedule1(patientID)),false);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

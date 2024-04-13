@@ -123,19 +123,22 @@ public class HospitalUtil {
             switch (city) {
                 case "MTL":
                     URL mtlHospitalURL = new URL("http://localhost:8080/mtlHospital?wsdl");
-                    QName mtlQName = new QName("http://server.hospital.com/", "MTLHospitalService");
+                    QName mtlQName = new QName("http://replica1/", "MTLHospitalService");
+                    QName mtlQName2 = new QName("http://replica1/", "MTLHospitalPort");
                     Service mtlService = Service.create(mtlHospitalURL, mtlQName);
-                    return mtlService.getPort(Hospital.class);
+                    return mtlService.getPort(mtlQName2, Hospital.class);
                 case "QUE":
                     URL queHospitalURL = new URL("http://localhost:8080/queHospital?wsdl");
-                    QName queQName = new QName("http://server.hospital.com/", "QUEHospitalService");
+                    QName queQName = new QName("http://replica1/", "QUEHospitalService");
+                    QName queQName2 = new QName("http://replica1/", "QUEHospitalPort");
                     Service queService = Service.create(queHospitalURL, queQName);
-                    return queService.getPort(Hospital.class);
+                    return queService.getPort(queQName2, Hospital.class);
                 case "SHE":
                     URL sheHospitalURL = new URL("http://localhost:8080/sheHospital?wsdl");
-                    QName sheQName = new QName("http://server.hospital.com/", "SHEHospitalService");
+                    QName sheQName = new QName("http://replica1/", "SHEHospitalService");
+                    QName sheQName2 = new QName("http://replica1/", "SHEHospitalPort");
                     Service sheService = Service.create(sheHospitalURL, sheQName);
-                    return sheService.getPort(Hospital.class);
+                    return sheService.getPort(sheQName2, Hospital.class);
                 default:
                     return null;
             }
@@ -178,7 +181,7 @@ public class HospitalUtil {
 
     public String convertAvailablityListToString(final ConcurrentHashMap<String, ConcurrentHashMap<String, Integer>> availabilityList) {
 
-        final StringBuilder resultString = new StringBuilder();
+        final StringBuilder resultString = new StringBuilder("");
 
         availabilityList.forEach((city, idCapacityMap) -> {
             idCapacityMap.forEach((id, capacity) -> resultString.append(id).append(":").append(capacity).append(","));

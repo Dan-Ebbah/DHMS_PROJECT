@@ -1,4 +1,4 @@
-package replica3;
+package replica3.server;
 
 import replica3.database.HashMapImpl;
 import replica3.model.UDPServerInfo;
@@ -9,11 +9,12 @@ import javax.jws.soap.SOAPBinding;
 import java.net.SocketException;
 @WebService
 @SOAPBinding(style = SOAPBinding.Style.RPC)
-public class SherbrookeServerObjectImpl extends ServerObjectImpl {
-    public SherbrookeServerObjectImpl() throws SocketException {
-        super();
-    }public SherbrookeServerObjectImpl(HashMapImpl database) throws SocketException {
-        super(database, 5053, LoggerUtil.getLogger(SherbrookeServerObjectImpl.class.getName(), "SHE"));
+public class SherbrookeServerImpl extends ServerImpl{
+    public SherbrookeServerImpl() {
+    }
+
+    public SherbrookeServerImpl(HashMapImpl database) throws SocketException {
+        super(database, 5053, LoggerUtil.getLogger(SherbrookeServerImpl.class.getName(), "Sherbrooke"));
     }
 
     @Override

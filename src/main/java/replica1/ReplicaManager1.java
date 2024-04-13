@@ -1,17 +1,23 @@
-package replicaManager;
+package replica1;
+
+import replicaManager.ReplicaInterface;
 
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import java.io.File;
 import java.io.IOException;
-
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ReplicaManager {
+public class ReplicaManager1 {
     private static final int sequencer_Port = 4444;
     private static final int BUFFER_SIZE = 1024;
     public static final int CRASH_PORT = 3333;
@@ -20,7 +26,7 @@ public class ReplicaManager {
 
     public static void main(String[] args) {
         startReplica("replica1");
-        new Thread(ReplicaManager::startNewThreadForOtherRMs).start();
+        new Thread(ReplicaManager1::startNewThreadForOtherRMs).start();
 
         //should start and be ready to receive messages
         try {
@@ -70,14 +76,14 @@ public class ReplicaManager {
 
         int i = 0;
         for (String city : new String[] {"MTL", "QUE", "SHE"}) {
-            ReplicaInterface replicaInterface = connectToCityServerObject(city);
+            replicaManager.ReplicaInterface replicaInterface = connectToCityServerObject(city);
             replicaInterface.setInfo(concurrentHashMapCities[i]);
             i ++;
         }
     }
 
     private static List<String> getOtherRMsData() {
-        String [] rmArray = {"192.168.43.254"};//{"192.168.43.254", "", ""};
+        String [] rmArray = {"192.168.43.254", "192.168.43.251", "192.168.43.159"};
         List<String> result = new ArrayList<>(3);
         try {
             for (String ipAddress : rmArray) {
@@ -173,9 +179,9 @@ public class ReplicaManager {
     private static String getReplicaData() {
         StringBuilder hospitalsData = new StringBuilder();
         for (String city : new String[]{"MTL", "QUE", "SHE"}) {
-            ReplicaInterface replicaInterface = connectToCityServerObject(city);
+            replicaManager.ReplicaInterface replicaInterface = connectToCityServerObject(city);
             hospitalsData.append(replicaInterface.getInfo());
-            hospitalsData.append("\\");
+            hospitalsData.append("/");
         }
         return hospitalsData.toString();
     }
@@ -196,7 +202,7 @@ public class ReplicaManager {
         String city = splitRequestMessage[0];
         String operation = splitRequestMessage[1];
 
-        ReplicaInterface replicaInterface = connectToCityServerObject(city);
+        replicaManager.ReplicaInterface replicaInterface = connectToCityServerObject(city);
         if (replicaInterface == null) {
             System.out.println("ERROR as I could not connect to server object of " + city);
         }
@@ -206,7 +212,7 @@ public class ReplicaManager {
         return result;
     }
 
-    private static String callOperation(ReplicaInterface replicaInterface, String operation, String [] parameters) {
+    private static String callOperation(replicaManager.ReplicaInterface replicaInterface, String operation, String [] parameters) {
         switch (operation) {
             case "addAppointment":
                 return replicaInterface.addAppointment(parameters[0], parameters[1], Integer.parseInt(parameters[2]));
@@ -226,14 +232,14 @@ public class ReplicaManager {
         return null;
     }
 
-    private static ReplicaInterface connectToCityServerObject(String city){
+    private static replicaManager.ReplicaInterface connectToCityServerObject(String city){
         try {
             String url = "http://localhost:8080/" + city.toLowerCase() + "Hospital" + "?wsdl";
             URL urlLink = new URL(url);
             QName qname = new QName("http://replica1/",city.toUpperCase() + "HospitalService");
             QName qName2 = new QName("http://replica1/", city.toUpperCase() + "HospitalPort");
             Service service = Service.create(urlLink,qname);
-            return service.getPort(qName2,ReplicaInterface.class);
+            return service.getPort(qName2, ReplicaInterface.class);
         } catch (Exception e) {
             System.out.println("Error e:" + e.getMessage());
         }

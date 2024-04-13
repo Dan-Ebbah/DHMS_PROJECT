@@ -1,5 +1,6 @@
 package frontend;
 
+import static frontend.ValidationHelper.isValidAdminID;
 import static frontend.ValidationHelper.isValidAppointmentID;
 import static frontend.ValidationHelper.isValidAppointmentType;
 import static frontend.ValidationHelper.isValidUserID;
@@ -21,11 +22,12 @@ public class FrontEndImpl implements FrontEndInterface {
     private static final int FE_RECEIVE_PORT_FOR_RM = 19000;
     private static final int FE_SEND_PORT_FOR_SEQUENCER = 19001;
     private static final int FE_SEND_PORT_FOR_RM = 19002;
-    private static final String SEQUENCER_IP = "";
+    private static final String SEQUENCER_IP = "192.168.43.159";
     private static final int SEQUENCER_PORT = 2222;
 
-    private static final String[] RM_HOSTS = new String[] {"", "", "", ""};
-    private static final int[] RM_PORTS = new int[] {2222, 2222, 2222, 2222};
+//    private static final String[] RM_HOSTS = new String[] {"192.168.43.159", "192.168.43.7", "", ""};
+    private static final String[] RM_HOSTS = new String[] {"192.168.43.254", "192.168.43.7"};
+    private static final int[] RM_PORTS = new int[] {4444, 4444};
     private static final String FAILURE = "FAILURE";
 
     private final DatagramSocket socketToSendToSequencer;
@@ -60,7 +62,7 @@ public class FrontEndImpl implements FrontEndInterface {
     }
 
     @Override
-    public String bookAppointment(String patientID, String appointmentID, String appointmentType) {
+    public String bookAppointment(String patientID, String appointmentType, String appointmentID) {
         if (!isValidUserID(patientID)
                 || !isValidAppointmentID(appointmentID)
                 || !isValidAppointmentType(appointmentType)) {
@@ -69,7 +71,7 @@ public class FrontEndImpl implements FrontEndInterface {
 
         String city = patientID.substring(0, 3);
         String operationName = "bookAppointment";
-        udpRequest = createUdpRequest(city, operationName, patientID, appointmentID, appointmentType);
+        udpRequest = createUdpRequest(city, operationName, patientID, appointmentType, appointmentID);
         callSequencer();
         return getResponseToReturnToClient();
     }
@@ -102,12 +104,13 @@ public class FrontEndImpl implements FrontEndInterface {
 
     @Override
     public String addAppointment(String adminID, String appointmentID, String appointmentType, int capacity) {
-        if (!isValidUserID(adminID)
+        if (!isValidAdminID(adminID)
                 || !isValidAppointmentID(appointmentID, adminID)
                 || !isValidAppointmentType(appointmentType)) {
             return FAILURE;
         }
 
+        System.out.println("received add request");
         String city = adminID.substring(0, 3);
         String operationName = "addAppointment";
         udpRequest = createUdpRequest(city, operationName, appointmentID, appointmentType, String.valueOf(capacity));
@@ -117,7 +120,7 @@ public class FrontEndImpl implements FrontEndInterface {
 
     @Override
     public String removeAppointment(String adminID, String appointmentID, String appointmentType) {
-        if (!isValidUserID(adminID)
+        if (!isValidAdminID(adminID)
                 || !isValidAppointmentID(appointmentID, adminID)
                 || !isValidAppointmentType(appointmentType)) {
             return FAILURE;
@@ -132,7 +135,7 @@ public class FrontEndImpl implements FrontEndInterface {
 
     @Override
     public String listAppointmentAvailability(String adminID, String appointmentType) {
-        if (!isValidUserID(adminID) || !isValidAppointmentType(appointmentType)) {
+        if (!isValidAdminID(adminID) || !isValidAppointmentType(appointmentType)) {
             return FAILURE;
         }
 
@@ -183,6 +186,7 @@ public class FrontEndImpl implements FrontEndInterface {
         for (int i = 0; i < responseFromRMs.length; i ++) {
             for (int j = i + 1; j < responseFromRMs.length; j ++) {
                 if (!"".equals(responseFromRMs[j]) && responseFromRMs[j].equals(responseFromRMs[i])) {
+                    System.out.println("returning: " + responseFromRMs[i]);
                     return responseFromRMs[i];
                 }
             }
@@ -215,6 +219,7 @@ public class FrontEndImpl implements FrontEndInterface {
                     SEQUENCER_PORT);
             resetState();
             socketToSendToSequencer.send(datagram);
+            System.out.println("sent to sequencer");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -240,7 +245,8 @@ public class FrontEndImpl implements FrontEndInterface {
             try {
                 socketToReceiveFromRMs.receive(response);
                 String responseDataAsString = new String(response.getData()).substring(0, response.getLength());
-                String[] responseAsArray = responseDataAsString.split(" ");
+                System.out.println("responseDataAsString: " + responseDataAsString);
+                String[] responseAsArray = responseDataAsString.split(" ", -1);
                 int rmNumber = Integer.parseInt(responseAsArray[0]);
                 if (String.valueOf(requestId).equals(responseAsArray[1])) {
                     if (waitingForFirstResponse) {
@@ -262,6 +268,7 @@ public class FrontEndImpl implements FrontEndInterface {
         long timeStampOfLastCheckedRequest = -1;
         while (true) {
             if (!waitingForFirstResponse
+                    && requestToSequencerTimeStamp != 0
                     && timeStampOfLastCheckedRequest != requestToSequencerTimeStamp
                     && System.currentTimeMillis() - requestToSequencerTimeStamp >= 2 * timeTakenForFastestResponse) {
                 for (int i = 0; i < 4; i++) {

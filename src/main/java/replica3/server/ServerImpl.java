@@ -1,4 +1,4 @@
-package replica3;
+package replica3.server;
 
 
 import replica3.database.HashMapImpl;
@@ -6,7 +6,6 @@ import replica3.model.Appointment;
 import replica3.model.AppointmentType;
 import replica3.model.HospitalType;
 import replica3.model.UDPServerInfo;
-import replicaManager.ReplicaInterface;
 
 import javax.jws.WebService;
 import javax.jws.soap.SOAPBinding;
@@ -21,24 +20,24 @@ import java.util.logging.Logger;
 
 @WebService(targetNamespace = "http://localhost:8082/server")
 @SOAPBinding(style = SOAPBinding.Style.RPC)
-public class ServerObjectImpl implements ReplicaInterface {
+public class ServerImpl implements ServerInterface {
     private HashMapImpl _database;
     private String successful = "successful";
     private String failure = "failure";
     private Logger logger;
 
-    public ServerObjectImpl(HashMapImpl database, int portNum, Logger logger) throws SocketException {
+    public ServerImpl(HashMapImpl database, int portNum, Logger logger) throws SocketException {
         _database = database;
         this.logger = logger;
 //        createAndStartThread(portNum, getServerName());
     }
 
-    public ServerObjectImpl(HashMapImpl database, Logger logger) {
+    public ServerImpl(HashMapImpl database, Logger logger) {
         _database = database;
         this.logger = logger;
     }
 
-    public ServerObjectImpl() {
+    public ServerImpl() {
     }
 
     public String getServerName() {

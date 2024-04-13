@@ -11,6 +11,14 @@ public class ValidationHelper {
         return userId.length() == 8 && userId.substring(4).matches("\\d+");
     }
 
+    public static boolean isValidAdminID(String userId) {
+        if (!(userId.startsWith("MTLA") || userId.startsWith("QUEA") || userId.startsWith("SHEA"))) {
+            return false;
+        }
+
+        return userId.length() == 8 && userId.substring(4).matches("\\d+");
+    }
+
     public static boolean isValidAppointmentID(String appointmentID) {
         if (!(appointmentID.startsWith("MTLM") || appointmentID.startsWith("QUEM") || appointmentID.startsWith("SHEM")
                 || appointmentID.startsWith("MTLA") || appointmentID.startsWith("QUEA") || appointmentID.startsWith("SHEA")

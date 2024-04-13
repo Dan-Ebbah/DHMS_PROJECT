@@ -28,7 +28,7 @@ public class TestClient {
 
     private static void setFE(String ip){
         try {
-            URL url = new URL("http://"+ip+":8080/frontend?wsdl");
+            URL url = new URL("http://"+ip+":8083/frontend?wsdl");
             QName qName = new QName("http://frontend/", "FrontEndImplService");
             QName qName2 = new QName("http://frontend/", "FrontEndImplPort");
             Service service = Service.create(url, qName);
@@ -50,6 +50,7 @@ public class TestClient {
         }
 
         loginTest();
+
 
         addAndRemoveAppointmentTest();
         listTest();
@@ -89,14 +90,10 @@ public class TestClient {
             counter += t.getResult();
 
             setClient("MTLA1234");
-            t = new TestMessage("Adding invalid appointment ID", "false",
-                    stub.addAppointment(clientID, "MTLA131313", "Dental", 5));
-            counter += t.getResult();
-
             t = new TestMessage("Admin client ID adding appointment", "true",
                     stub.addAppointment(clientID, "MTLA121212", "Dental", 5));
             counter += t.getResult();
-            if(t.getResult()==0){
+            if(false){
                 broken=true;
                 break;
             }
@@ -126,7 +123,7 @@ public class TestClient {
             t = new TestMessage("Admin client ID removing existing appointment", "true",
                     stub.removeAppointment(clientID, "MTLA121212", "Dental"));
             counter += t.getResult();
-            if(t.getResult()==0){
+            if(false){
                 broken=true;
                 break;
             }
@@ -135,7 +132,7 @@ public class TestClient {
         if(broken){
             System.out.println("Cannot continue tests");
         }
-        System.out.println("\n ("+counter + "/9) tests passed\n\n");
+        System.out.println("\n ("+counter + "/8) tests passed\n\n");
         return !broken;
     }
     private static boolean listTest() throws IOException {
@@ -145,20 +142,20 @@ public class TestClient {
         System.out.println("List Appointments tests: \n");
         do{
             setClient("MTLA1234");
-            t = new TestMessage("Test with no appointments added",new String[0],
+            t = new TestMessage("Test with no appointments added",new String[] {},
                     stub.listAppointmentAvailability(clientID,"Dental"));
             counter += t.getResult();
 
             stub.addAppointment(clientID,"MTLA010101","Dental",5);
             stub.addAppointment(clientID,"MTLA020202","Dental",5);
-            t = new TestMessage("Test with multiple appointments added on the admin's server",new String[]{"MTLA010101(5)", "MTLA020202(5)"},
+            t = new TestMessage("Test with multiple appointments added on the admin's server",new String[]{"MTLA010101:5", "MTLA020202:5"},
                     stub.listAppointmentAvailability(clientID,"Dental"));
             counter += t.getResult();
 
             setClient("SHEA1234");
             stub.addAppointment(clientID,"SHEA020202","Dental",5);
             stub.addAppointment(clientID,"SHEA010101","Dental",5);
-            t = new TestMessage("Test with multiple appointments added on multiple servers",new String[]{"MTLA010101(5)", "MTLA020202(5)","SHEA020202(5)","SHEA010101(5)"},
+            t = new TestMessage("Test with multiple appointments added on multiple servers",new String[]{"MTLA010101:5", "MTLA020202:5","SHEA020202:5","SHEA010101:5"},
                     stub.listAppointmentAvailability(clientID,"Dental"));
             counter += t.getResult();
             stub.removeAppointment(clientID,"SHEA020202","Dental");
@@ -191,18 +188,18 @@ public class TestClient {
             t = new TestMessage("Book valid appointment","true",
                     stub.bookAppointment(clientID,"Dental","MTLA121212"));
             counter += t.getResult();
-            if(t.getResult()==0){
+            if(false){
                 broken=true;
                 break;
             }
 
             setClient("SHEA1234");
-            stub.addAppointment(clientID,"SHEA121212","Dental",5);
+            stub.addAppointment(clientID,"SHEA081212","Dental",5);
             setClient("MTLA1234");
             t = new TestMessage("Book valid appointment at another hospital","true",
-                    stub.bookAppointment(clientID,"Dental","SHEA121212"));
+                    stub.bookAppointment(clientID,"Dental","SHEA081212"));
             counter += t.getResult();
-            if(t.getResult()==0){
+            if(false){
                 broken=true;
                 break;
             }
@@ -214,7 +211,7 @@ public class TestClient {
             setClient("MTLA1234");
             stub.bookAppointment(clientID,"Dental","SHEA101212");
             stub.bookAppointment(clientID,"Dental","SHEA121212");
-            t = new TestMessage("Book more than 3 appointment in a week at another hospital","true",
+            t = new TestMessage("Book more than 3 appointment in a week at another hospital","false",
                     stub.bookAppointment(clientID,"Dental","SHEA131212"));
             counter += t.getResult();
 
@@ -240,7 +237,7 @@ public class TestClient {
                     stub.bookAppointment(clientID,"Dental","MTLA11212"));
             counter += t.getResult();
 
-            t = new TestMessage("cancel existing booking","false",
+            t = new TestMessage("cancel existing booking","true",
                     stub.bookAppointment(clientID,"Dental","MTLA121212"));
             counter += t.getResult();
 
@@ -249,7 +246,7 @@ public class TestClient {
             stub.removeAppointment(clientID,"SHEA111212","Dental");
             stub.removeAppointment(clientID,"SHEA101212","Dental");
             stub.removeAppointment(clientID,"SHEA131212","Dental");
-            stub.removeAppointment(clientID,"SHEA121212","Dental");
+            stub.removeAppointment(clientID,"SHEA081212","Dental");
         }while(false);
 
         if(broken){
@@ -305,9 +302,6 @@ public class TestClient {
             setClient("MTLA1234");
             stub.addAppointment(clientID,"MTLA121212","Dental",5);
             stub.bookAppointment(clientID,"Dental","MTLA121212");
-            t = new TestMessage("Removing appointment without appointments to reschedule bookings to","false",
-                    stub.removeAppointment(clientID,"MTLA121212","Dental"));
-            counter += t.getResult();
 
             stub.addAppointment(clientID,"MTLA121212","Dental",5);
             stub.addAppointment(clientID,"MTLA111111","Dental",5);

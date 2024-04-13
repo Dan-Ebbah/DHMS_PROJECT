@@ -17,7 +17,6 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,7 +73,7 @@ public class MTLHospital implements Hospital {
                     String patientID = request[1];
                     String appointmentID = request[2];
                     String appointmentType = request[3];
-                    result.set(bookAppointment(patientID, appointmentID, appointmentType));
+                    result.set(bookAppointment(patientID, appointmentType, appointmentID));
                     bookAppointmentsOnHold.remove(appointmentType + "," + appointmentID);
                 } else if ("cancelAppointment".equals(request[0])) {
                     String patientID = request[1];
@@ -106,7 +105,7 @@ public class MTLHospital implements Hospital {
     }
 
     @Override
-    public String bookAppointment(String patientID, String appointmentID, String appointmentType) {
+    public String bookAppointment(String patientID, String appointmentType, String appointmentID) {
 
         LocalDateTime logRequestTime = LocalDateTime.now();
         String logAction = "Book Appointment";
@@ -125,11 +124,11 @@ public class MTLHospital implements Hospital {
         }
 
         if (appointmentID.startsWith("QUE")) {
-            return queHospital.bookAppointment(patientID, appointmentID, appointmentType);
+            return queHospital.bookAppointment(patientID, appointmentType, appointmentID);
         }
 
         if (appointmentID.startsWith("SHE")) {
-            return sheHospital.bookAppointment(patientID, appointmentID, appointmentType);
+            return sheHospital.bookAppointment(patientID, appointmentType, appointmentID);
         }
 
         // this will block all other users from booking the same appointment for which swap is going on
@@ -472,8 +471,8 @@ public class MTLHospital implements Hospital {
             responsePacket = new DatagramPacket(response, MAX_LEN);
             socket.receive(responsePacket);
 
-            if (!new String(response).contains("has cancelled the appointment")) {
-                logResponse = "Some issue with cancelling old appointment, " + oldAppointmentID + " (type: " + oldAppointmentType + ") - " + new String(response).substring(0, responsePacket.getLength());
+            if (!new String(response).contains("Successful")) {
+                logResponse = "Some issue with cancelling old appointment, " + oldAppointmentID + "(type: " + oldAppointmentType + ")";
                 logStatus = "Failure";
                 new LogRecord(LocalDateTime.now(), logAction, logId, logStatus, logResponse).addToLogsFile();
                 return logStatus;
@@ -560,16 +559,16 @@ public class MTLHospital implements Hospital {
     }
 
     private String hashMapToString(ConcurrentHashMap<String, ConcurrentHashMap<String, AppointmentDetails>> appointments){
-        String str = "";
+        StringBuffer stringBuffer = new StringBuffer();
         appointments.forEach((type, idDetails) -> {
             idDetails.forEach((id, details) ->  {
-                str.concat(";"+ id +":"                //appointmentID
-                    + type +":"    //appointment type
-                    + details.getCapacity() +":"           //appointment capacity
-                    + usersListToInfo(details.getPatientIDList()));
+                stringBuffer.append(";").append(id).append(":"                //appointmentID
+                ).append(type).append(":"    //appointment type
+                ).append(details.getCapacity()).append(":"           //appointment capacity
+                ).append(usersListToInfo(details.getPatientIDList()));
             });
         });
-        return str;
+        return stringBuffer.toString();
     }
 
     private String usersListToInfo(List<String> users){

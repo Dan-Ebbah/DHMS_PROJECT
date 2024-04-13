@@ -73,7 +73,7 @@ public class SHEHospital implements Hospital {
                     String patientID = request[1];
                     String appointmentID = request[2];
                     String appointmentType = request[3];
-                    result.set(bookAppointment(patientID, appointmentID, appointmentType));
+                    result.set(bookAppointment(patientID, appointmentType, appointmentID));
                     bookAppointmentsOnHold.remove(appointmentType + "," + appointmentID);
                 } else if ("cancelAppointment".equals(request[0])) {
                     String patientID = request[1];
@@ -105,7 +105,7 @@ public class SHEHospital implements Hospital {
     }
 
     @Override
-    public String bookAppointment(String patientID, String appointmentID, String appointmentType) {
+    public String bookAppointment(String patientID, String appointmentType, String appointmentID) {
 
         LocalDateTime logRequestTime = LocalDateTime.now();
         String logAction = "Book Appointment";
@@ -124,11 +124,11 @@ public class SHEHospital implements Hospital {
         }
 
         if (appointmentID.startsWith("MTL")) {
-            return mtlHospital.bookAppointment(patientID, appointmentID, appointmentType);
+            return mtlHospital.bookAppointment(patientID, appointmentType, appointmentID);
         }
 
         if (appointmentID.startsWith("QUE")) {
-            return queHospital.bookAppointment(patientID, appointmentID, appointmentType);
+            return queHospital.bookAppointment(patientID, appointmentType, appointmentID);
         }
 
         // this will block all other users from booking the same appointment for which swap is going on
@@ -471,8 +471,8 @@ public class SHEHospital implements Hospital {
             responsePacket = new DatagramPacket(response, MAX_LEN);
             socket.receive(responsePacket);
 
-            if (!new String(response).contains("has cancelled the appointment")) {
-                logResponse = "Some issue with cancelling old appointment, " + oldAppointmentID + "(type: " + oldAppointmentType + ") - "+ new String(response).substring(0, responsePacket.getLength());
+            if (!new String(response).contains("Successful")) {
+                logResponse = "Some issue with cancelling old appointment, " + oldAppointmentID + "(type: " + oldAppointmentType + ")";
                 logStatus = "Failure";
                 new LogRecord(LocalDateTime.now(), logAction, logId, logStatus, logResponse).addToLogsFile();
                 return logStatus;

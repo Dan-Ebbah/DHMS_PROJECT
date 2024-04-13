@@ -1,9 +1,6 @@
 package replica3.database;
 
 
-
-
-
 import replica3.model.Appointment;
 import replica3.model.AppointmentType;
 

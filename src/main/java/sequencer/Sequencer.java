@@ -10,13 +10,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Sequencer {
     private static final AtomicInteger SEQUENCER_ID = new AtomicInteger(0);
-    private static final String SEQUENCER_IP = "localhost";
+    private static final String SEQUENCER_IP = "192.168.43.159";
     private static final int SEQUENCER_RECEIVE_PORT = 2222;
-    private static final int[] RM_PORTS = {5000, 5001, 5002, 5003}; // Ports of the replica managers
-    private static final String[] RM_HOSTS = {"", "", "", ""};
+    private static final int[] RM_PORTS = {4444, 4444, 4444, 4444}; // Ports of the replica managers
+    private static final String[] RM_HOSTS = {"192.168.43.254", "192.168.43.7", "192.168.43.159", "192.168.43.251"};
     private static final int BUFFER_SIZE = 1024;
-    private static final long ACK_TIMEOUT = 2000; // Timeout for acknowledgment in milliseconds
-    private static final int NUM_REPLICA_MANAGERS = 4;
+    private static final int NUM_REPLICA_MANAGERS = 3;
 
     public static void main(String[] args) {
         try (DatagramSocket sequencerSocket = new DatagramSocket(null)) {
@@ -37,14 +36,17 @@ public class Sequencer {
     private static void processRequest(DatagramPacket packet) {
         try {
             String request = new String(packet.getData(), 0, packet.getLength());
+            System.out.println("Received -> " + request);
             String message = SEQUENCER_ID.incrementAndGet() + " " + request;
+            System.out.println("Sending this message -> " + message);
 
             List<DatagramSocket> sockets = Arrays.asList(new DatagramSocket(),
                     new DatagramSocket(), new DatagramSocket(), new DatagramSocket());
 
             // Send request to each replica manager using unicast
             for (int i = 1; i <= NUM_REPLICA_MANAGERS; i++) {
-                sendMessage(sockets.get(i - 1), message, i);
+                int finalI = i;
+                new Thread(() -> sendMessage(sockets.get(finalI - 1), message, finalI)).start();
             }
         } catch (SocketException e) {
             throw new RuntimeException(e);
@@ -55,26 +57,32 @@ public class Sequencer {
         try {
             byte[] data = message.getBytes();
             DatagramPacket packet = new DatagramPacket(data, data.length,
-                    InetAddress.getByName(RM_HOSTS[rmNumber]), RM_PORTS[rmNumber]);
+                    InetAddress.getByName(RM_HOSTS[rmNumber - 1]), RM_PORTS[rmNumber - 1]);
             socket.send(packet);
 
-            boolean receivedAck = false;
-            new Thread(() -> receiveAck(socket)).start();
-            sleep(ACK_TIMEOUT);
+            boolean receivedAck;
+            receivedAck = receiveAck(socket);
 
             if (!receivedAck) {
                 sendMessage(socket, message, rmNumber);
+                System.out.println("Just sent -> " + message);
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void receiveAck(DatagramSocket socket) {
+    private static boolean receiveAck(DatagramSocket socket) {
         byte[] buffer = new byte[BUFFER_SIZE];
         DatagramPacket ackPacket = new DatagramPacket(buffer, buffer.length);
         try {
+            socket.setSoTimeout(3000);
             socket.receive(ackPacket);
+            String messageReceived = new String(ackPacket.getData(), 0, ackPacket.getLength());
+            System.out.println("Acknowledgement Received => " + messageReceived + " from ip = " + ackPacket.getAddress().getHostAddress());
+            return true;
+        } catch (SocketException e) {
+            return false;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

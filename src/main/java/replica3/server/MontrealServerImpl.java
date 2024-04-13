@@ -1,4 +1,4 @@
-package replica3;
+package replica3.server;
 
 import replica3.database.HashMapImpl;
 import replica3.util.LoggerUtil;
@@ -9,12 +9,12 @@ import java.net.SocketException;
 
 @WebService
 @SOAPBinding(style = SOAPBinding.Style.RPC)
-public class MontrealServerObjectImpl extends ServerObjectImpl {
-    public MontrealServerObjectImpl() {
+public class MontrealServerImpl extends ServerImpl{
+    public MontrealServerImpl() {
     }
 
-    public MontrealServerObjectImpl(HashMapImpl database) throws SocketException {
-        super(database, 5052, LoggerUtil.getLogger(MontrealServerObjectImpl.class.getName(), "MTL"));
+    public MontrealServerImpl(HashMapImpl database) throws SocketException {
+        super(database, 5052, LoggerUtil.getLogger(MontrealServerImpl.class.getName(), "Montreal"));
     }
 
     @Override

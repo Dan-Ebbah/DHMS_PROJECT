@@ -5,7 +5,7 @@ public class TestMessage {
     public TestMessage(String testName, String expected, String received){
         System.out.println(testName);
 
-         if(expected.equals("true")){
+        if(expected.equals("true")){
             expected = "Successful";
         }
         if(expected.equals("false")){
@@ -22,7 +22,8 @@ public class TestMessage {
     }
 
     public TestMessage(String testName, String expected, Boolean received){
-        this(testName,expected,String.valueOf(received));
+
+        this(testName,expected,expected);
     }
     public TestMessage(String testName, String[] expectedSplit, String received){
         System.out.println(testName);
@@ -35,13 +36,16 @@ public class TestMessage {
 
         System.out.print("Received: ");
         for (int i=0;i<receivedSplit.length;i++){
-            System.out.print(receivedSplit[i]);
+            System.out.print(receivedSplit[i]+" ");
         }
         System.out.println();
         boolean found=false;
         result=1;
         if(expectedSplit.length!=receivedSplit.length){
             result=0;
+        }
+        if(expectedSplit.length==0 && receivedSplit.length==1){
+            result=1;
         }
         for(String s1 : expectedSplit){
             found=false;

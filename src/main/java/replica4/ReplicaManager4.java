@@ -1,17 +1,23 @@
-package replicaManager;
+package replica4;
+
+import replicaManager.ReplicaInterface;
 
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import java.io.File;
 import java.io.IOException;
-
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ReplicaManager {
+public class ReplicaManager4 {
     private static final int sequencer_Port = 4444;
     private static final int BUFFER_SIZE = 1024;
     public static final int CRASH_PORT = 3333;
@@ -19,8 +25,8 @@ public class ReplicaManager {
     private static Process process;
 
     public static void main(String[] args) {
-        startReplica("replica1");
-        new Thread(ReplicaManager::startNewThreadForOtherRMs).start();
+        startReplica("replica4");
+        new Thread(ReplicaManager4::startNewThreadForOtherRMs).start();
 
         //should start and be ready to receive messages
         try {
@@ -37,14 +43,14 @@ public class ReplicaManager {
                     case "crash":
                         if (isCrashed()) {
                             List<String> dataList = getOtherRMsData();
-                            startReplica("replica1");
+                            startReplica("replica4");
                             setData(dataList);
                         }
                     case "byzantine":
                         // do something: start a new replica with the Db from other RMs
                         List<String> dataList = getOtherRMsData();
                         stopReplica();
-                        startReplica("replica1");
+                        startReplica("replica4");
                         setData(dataList);
                     default:
                         String responseFromReplica = forwardToReplica(splitMessage[1]);
@@ -77,7 +83,7 @@ public class ReplicaManager {
     }
 
     private static List<String> getOtherRMsData() {
-        String [] rmArray = {"192.168.43.254"};//{"192.168.43.254", "", ""};
+        String [] rmArray = {"192.168.43.7", "192.168.43.159", "192.168.43.254"};
         List<String> result = new ArrayList<>(3);
         try {
             for (String ipAddress : rmArray) {
@@ -175,7 +181,7 @@ public class ReplicaManager {
         for (String city : new String[]{"MTL", "QUE", "SHE"}) {
             ReplicaInterface replicaInterface = connectToCityServerObject(city);
             hospitalsData.append(replicaInterface.getInfo());
-            hospitalsData.append("\\");
+            hospitalsData.append("/");
         }
         return hospitalsData.toString();
     }
@@ -230,10 +236,10 @@ public class ReplicaManager {
         try {
             String url = "http://localhost:8080/" + city.toLowerCase() + "Hospital" + "?wsdl";
             URL urlLink = new URL(url);
-            QName qname = new QName("http://replica1/",city.toUpperCase() + "HospitalService");
-            QName qName2 = new QName("http://replica1/", city.toUpperCase() + "HospitalPort");
+            QName qname = new QName("http://replica4/",city.toUpperCase() + "HospitalService");
+            QName qName2 = new QName("http://replica4/", city.toUpperCase() + "HospitalPort");
             Service service = Service.create(urlLink,qname);
-            return service.getPort(qName2,ReplicaInterface.class);
+            return service.getPort(qName2, ReplicaInterface.class);
         } catch (Exception e) {
             System.out.println("Error e:" + e.getMessage());
         }
@@ -246,7 +252,7 @@ public class ReplicaManager {
             String[] requestArgs = request.split(" ");//requestId;
             InetAddress FrontAddress = InetAddress.getByName(requestArgs[1]);
             int FrontEndPort = Integer.parseInt(requestArgs[2]);
-            String updatedMessage = "1 " + requestArgs[3] + " " + message;
+            String updatedMessage = "4 " + requestArgs[3] + " " + message;
             System.out.println(updatedMessage);
             DatagramPacket packet = new DatagramPacket(updatedMessage.getBytes(StandardCharsets.UTF_8), updatedMessage.getBytes(StandardCharsets.UTF_8).length, FrontAddress,FrontEndPort);
             new DatagramSocket().send(packet);

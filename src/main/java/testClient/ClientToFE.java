@@ -6,7 +6,7 @@ public class ClientToFE {
         FE = fe;
     }
     String bookAppointment(String patientID, String type, String appointmentID){
-        return FE.bookAppointment(patientID, appointmentID,type);
+        return FE.bookAppointment(patientID, type,appointmentID);
     }
     String getAppointmentSchedule(String patientID){
         return FE.getAppointmentSchedule(patientID);

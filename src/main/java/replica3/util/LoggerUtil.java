@@ -11,7 +11,7 @@ public class LoggerUtil {
     public static Logger getLogger(String className, String fileName) {
         Logger logger = Logger.getLogger(className);
         try {
-            fileName = "/Users/danieldan-ebbah/Documents/School/MACS/COMP_6231/Assignments/code/DHMS-Replication-Project/DHMS_PROJECT/src/main/java/replica3/" + fileName.concat(".log");
+            fileName = fileName.concat(".log");
             FileHandler fileHandler = new FileHandler(fileName, true);
             fileHandler.setFormatter(new MyFormatter());
 
