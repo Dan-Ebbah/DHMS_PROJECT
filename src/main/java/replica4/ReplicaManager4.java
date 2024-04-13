@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
@@ -16,11 +17,18 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ReplicaManager4 {
-    private static final int sequencer_Port = 4444;
+    private static final int RM_RECEIVE_PORT_FOR_SEQUENCER = 4444;
+    public static final int LISTEN_PORT_FOR_DATA_REQUESTS = 3333;
     private static final int BUFFER_SIZE = 1024;
-    public static final int CRASH_PORT = 3333;
+    private static final String[] RM_HOSTS = {"192.168.43.7", "192.168.43.254", "192.168.43.159"};
 
     private static Process process;
+    private static boolean handlingCrash = false;
+    private static boolean handlingByzantine = false;
+    private static int byzantineCount = 0;
+    private static int lastExecutedSeqNumber = 0;
+    private static String runningReplica = "";
+
 
     public static void main(String[] args) {
         shutDownGracefullyAtTheTimeOfTermination();
@@ -30,31 +38,47 @@ public class ReplicaManager4 {
 
         //should start and be ready to receive messages
         try {
-            DatagramSocket rmSocket = getDatagramSocket(sequencer_Port);
+            DatagramSocket rmSocket = getDatagramSocket(RM_RECEIVE_PORT_FOR_SEQUENCER);
             System.out.println("Replica Manager started...");
 
             while (true) {
                 DatagramPacket receivePacket = getDatagramPacket(rmSocket);
                 String messageReceived = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                if (handlingCrash || handlingByzantine) {
+                    continue;
+                }
+                if(!isSequenceNumberOkayToExecute(messageReceived.split(" ")[0])) {
+                    continue;
+                }
                 acknowledgeReceipt(receivePacket, rmSocket);
                 String[] splitMessage = messageReceived.split(" : ");
-                String responseCommand = splitMessage[0];
-                switch (responseCommand.trim().toLowerCase()) {
+                String metaData = splitMessage[0];
+                switch (metaData) {
                     case "crash":
                         if (isCrashed()) {
+                            handlingCrash = true;
                             List<String> dataList = getOtherRMsData();
                             startReplica("replica4");
                             setData(dataList);
+                            handlingCrash = false;
                         }
                     case "byzantine":
                         // do something: start a new replica with the Db from other RMs
-                        List<String> dataList = getOtherRMsData();
+                        byzantineCount ++;
+                        if (byzantineCount < 3) {
+                            continue;
+                        }
+                        handlingByzantine = true;
                         stopReplica();
-                        startReplica("replica4");
+                        List<String> dataList = getOtherRMsData();
+                        startReplica("replica1");
                         setData(dataList);
+                        byzantineCount = 0;
+                        handlingByzantine = false;
                     default:
+                        lastExecutedSeqNumber ++;
                         String responseFromReplica = forwardToReplica(splitMessage[1]);
-                        forwardToFrontEnd(responseFromReplica, responseCommand);
+                        forwardToFrontEnd(responseFromReplica, metaData);
                 }
             }
         } catch (IOException e) {
@@ -62,36 +86,46 @@ public class ReplicaManager4 {
         }
     }
 
-    private static void setData(List<String> dataList) {
-        String concurrentHashMap;
-        if (dataList.get(0).equalsIgnoreCase(dataList.get(1)) && dataList.get(0).equalsIgnoreCase(dataList.get(2))) {
-            concurrentHashMap = (dataList.get(0));
-        } else if (dataList.get(2).equalsIgnoreCase(dataList.get(0)) && dataList.get(2).equalsIgnoreCase(dataList.get(1))) {
-            concurrentHashMap = (dataList.get(2));
-        } else {
-            concurrentHashMap = (dataList.get(1));
+    private static boolean isSequenceNumberOkayToExecute(String value) {
+        if ("crash".equals(value) || "byzantine".equals(value)) {
+            return true;
         }
 
-        String[] concurrentHashMapCities =  concurrentHashMap.split("/");
+        int seqNumber = Integer.parseInt(value);
+        if (seqNumber == lastExecutedSeqNumber + 1) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static void setData(List<String> dataList) {
+        String correctData;
+        if (dataList.get(0).equalsIgnoreCase(dataList.get(1)) || dataList.get(0).equalsIgnoreCase(dataList.get(2))) {
+            correctData = (dataList.get(0));
+        } else if (dataList.get(1).equalsIgnoreCase(dataList.get(2))) {
+            correctData = (dataList.get(1));
+        } else {
+            correctData = (dataList.get(0));
+        }
+
+        String[] correctDataForHospitals =  correctData.split("/");
 
         int i = 0;
         for (String city : new String[] {"MTL", "QUE", "SHE"}) {
             ReplicaInterface replicaInterface = connectToCityServerObject(city);
-            replicaInterface.setInfo(concurrentHashMapCities[i]);
+            replicaInterface.setInfo(correctDataForHospitals[i]);
             i ++;
         }
     }
 
     private static List<String> getOtherRMsData() {
-        String [] rmArray = {"192.168.43.7", "192.168.43.159", "192.168.43.254"};
         List<String> result = new ArrayList<>(3);
         try {
-            for (String ipAddress : rmArray) {
-                InetSocketAddress socketAddress = new InetSocketAddress(ipAddress, CRASH_PORT);
-                DatagramSocket sendSocket = getDatagramSocket(socketAddress);
-                sendCrashMessage(sendSocket, socketAddress);
-                result.add(receiveDataBack(sendSocket));
-
+            for (String ipAddress : RM_HOSTS) {
+                DatagramSocket socket = new DatagramSocket();
+                String data = sendDataRequestMessage(socket, ipAddress);
+                result.add(data);
             }
         } catch (SocketException e) {
             throw new RuntimeException(e);
@@ -99,58 +133,86 @@ public class ReplicaManager4 {
         return result;
     }
 
-    private static String receiveDataBack(DatagramSocket socketAddress) {
-        byte[] buffer = new byte[BUFFER_SIZE];
-        String s;
-        DatagramPacket ackPacket = new DatagramPacket(buffer, buffer.length);
+    private static String sendDataRequestMessage(DatagramSocket socket, String ipAddress) {
         try {
-            socketAddress.receive(ackPacket);
-            s = new String(ackPacket.getData(), 0, ackPacket.getLength());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return s;
-    }
-
-    private static void sendCrashMessage(DatagramSocket sendSocket, InetSocketAddress inetSocketAddress) {
-        try{
-            String toSend = "Crash Happened";
+            String toSend = "Need data";
             byte[] sendData = toSend.getBytes();
-            DatagramPacket datagramPacket = new DatagramPacket(sendData, sendData.length, inetSocketAddress.getAddress(), CRASH_PORT);
-            sendSocket.send(datagramPacket);
-
+            DatagramPacket datagramPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(ipAddress), LISTEN_PORT_FOR_DATA_REQUESTS);
+            socket.send(datagramPacket);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        try {
+            socket.setSoTimeout(3000);
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
+
+        String data;
+        try {
+            byte[] buffer = new byte[BUFFER_SIZE];
+            DatagramPacket dataPacket = new DatagramPacket(buffer, buffer.length);
+            socket.receive(dataPacket);
+            data = new String(dataPacket.getData(), 0, dataPacket.getLength());
+        } catch (IOException e) {
+            data = "";
+        }
+
+        // retrying once more
+        if (data.isEmpty()) {
+            try {
+                byte[] buffer = new byte[BUFFER_SIZE];
+                DatagramPacket dataPacket = new DatagramPacket(buffer, buffer.length);
+                socket.receive(dataPacket);
+                data = new String(dataPacket.getData(), 0, dataPacket.getLength());
+            } catch (IOException ignored) {
+            }
+        }
+
+        return data;
     }
 
-    private static void sendMessage(DatagramSocket sendSocket, InetAddress inetAddress, String message) {
-        try{
-            byte[] sendData = message.getBytes();
-            DatagramPacket datagramPacket = new DatagramPacket(sendData, sendData.length, inetAddress, CRASH_PORT);
+    private static void sendMessage(DatagramSocket sendSocket, InetAddress inetAddress, int port, String message) {
+        try {
+            byte[] sendData = message.getBytes(StandardCharsets.UTF_8);
+            DatagramPacket datagramPacket = new DatagramPacket(sendData, sendData.length, inetAddress, port);
             sendSocket.send(datagramPacket);
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     private static boolean isCrashed() {
-        String result = forwardToReplica("MTL listAppointmentAvailability Dental");
-        return result.equalsIgnoreCase("SUCCESSFUL");
+        if (!process.isAlive()) {
+            return true;
+        }
+
+        try {
+            URL url = new URL("http://localhost:8080/mtlHospital?wsdl");
+            HttpURLConnection huc = (HttpURLConnection) url.openConnection();
+            int responseCode = huc.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                handlingCrash = false;
+                return false;
+            }
+        } catch (IOException e) {
+            return true;
+        }
+        return true;
     }
 
     private static void startNewThreadForOtherRMs() {
         try {
-            DatagramSocket socket = getDatagramSocket(CRASH_PORT);
-            System.out.println("Started Listening for Crashes on port "+ CRASH_PORT);
+            DatagramSocket socket = getDatagramSocket(LISTEN_PORT_FOR_DATA_REQUESTS);
+            System.out.println("Started Listening for data requests on port " + LISTEN_PORT_FOR_DATA_REQUESTS);
 
             while (true) {
                 DatagramPacket receivePacket = getDatagramPacket(socket);
                 String messageReceived = new String(receivePacket.getData(), 0, receivePacket.getLength());
 
                 String replicaData = getReplicaData();
-                sendMessage(socket, receivePacket.getAddress(), replicaData);
+                sendMessage(socket, receivePacket.getAddress(), receivePacket.getPort(), replicaData);
             }
         } catch (IOException io) {
             System.out.println(io.getMessage());
@@ -164,15 +226,9 @@ public class ReplicaManager4 {
         return receivePacket;
     }
 
-    private static DatagramSocket getDatagramSocket(int crashPort) throws SocketException {
+    private static DatagramSocket getDatagramSocket(int port) throws SocketException {
         DatagramSocket socket = new DatagramSocket(null);
-        socket.bind(new InetSocketAddress(crashPort));
-        return socket;
-    }
-
-    private static DatagramSocket getDatagramSocket(InetSocketAddress address) throws SocketException {
-        DatagramSocket socket = new DatagramSocket(null);
-        socket.bind(address);
+        socket.bind(new InetSocketAddress(port));
         return socket;
     }
 
@@ -197,7 +253,7 @@ public class ReplicaManager4 {
     }
 
     private static String forwardToReplica(String request) {
-        System.out.println(request);
+        System.out.println("Sending the request to replica: " + request);
         String[] splitRequestMessage = request.split(" ");
         String city = splitRequestMessage[0];
         String operation = splitRequestMessage[1];
@@ -236,8 +292,8 @@ public class ReplicaManager4 {
         try {
             String url = "http://localhost:8080/" + city.toLowerCase() + "Hospital" + "?wsdl";
             URL urlLink = new URL(url);
-            QName qname = new QName("http://replica4/",city.toUpperCase() + "HospitalService");
-            QName qName2 = new QName("http://replica4/", city.toUpperCase() + "HospitalPort");
+            QName qname = new QName("http://" + runningReplica + "/",city.toUpperCase() + "HospitalService");
+            QName qName2 = new QName("http://" + runningReplica + "/", city.toUpperCase() + "HospitalPort");
             Service service = Service.create(urlLink,qname);
             return service.getPort(qName2, ReplicaInterface.class);
         } catch (Exception e) {
@@ -249,12 +305,12 @@ public class ReplicaManager4 {
     public static void forwardToFrontEnd(String message, String request)
     {
         try {
-            String[] requestArgs = request.split(" ");//requestId;
-            InetAddress FrontAddress = InetAddress.getByName(requestArgs[1]);
-            int FrontEndPort = Integer.parseInt(requestArgs[2]);
+            String[] requestArgs = request.split(" ");
+            InetAddress frontEndAddress = InetAddress.getByName(requestArgs[1]);
+            int frontEndPort = Integer.parseInt(requestArgs[2]);
             String updatedMessage = "4 " + requestArgs[3] + " " + message;
             System.out.println(updatedMessage);
-            DatagramPacket packet = new DatagramPacket(updatedMessage.getBytes(StandardCharsets.UTF_8), updatedMessage.getBytes(StandardCharsets.UTF_8).length, FrontAddress,FrontEndPort);
+            DatagramPacket packet = new DatagramPacket(updatedMessage.getBytes(StandardCharsets.UTF_8), updatedMessage.getBytes(StandardCharsets.UTF_8).length, frontEndAddress, frontEndPort);
             new DatagramSocket().send(packet);
         } catch (IOException e) {
             e.printStackTrace();
@@ -262,36 +318,33 @@ public class ReplicaManager4 {
     }
 
     public static void startReplica(String replica) {
-        ProcessBuilder processBuilder;
+        ProcessBuilder processBuilder = new ProcessBuilder();
         try {
             switch (replica) {
                 case "replica1":
                     processBuilder = new ProcessBuilder("java", "-cp", "replica1-shanmukha.jar", "replica1.HospitalServer");
-                    processBuilder.directory(new File("C:\\Users\\shanm\\IdeaProjects\\DHMS_PROJECT\\src\\main\\resources\\"));
-                    process = processBuilder.start();
                     break;
                 case "replica2":
                     processBuilder = new ProcessBuilder("java", "-cp", "replica2-alain.jar", "replica2.HospitalServer");
-                    processBuilder.directory(new File("C:\\Users\\potat\\Desktop\\assignments\\comp6231\\project\\DHMS_PROJECT\\src\\main\\resources\\"));
-                    process = processBuilder.start();
                     break;
                 case "replica3":
                     processBuilder = new ProcessBuilder("java", "-cp", "replica3-daniel.jar", "replica3.HospitalServer");
-                    processBuilder.directory(new File("/Users/danieldan-ebbah/Documents/School/MACS/COMP_6231/Assignments/code/DHMS_PROJECT/src/main/resources/"));
-                    process = processBuilder.start();
                     break;
                 case "replica4":
                     processBuilder = new ProcessBuilder("java", "-cp", "replica4-naveen.jar", "replica4.HospitalServer");
-                    processBuilder.directory(new File("D:\\java_intellji\\DHMS_PROJECT\\src\\main\\resources\\"));
-                    process = processBuilder.start();
                     break;
             }
+            processBuilder.directory(new File("D:\\java_intellji\\DHMS_PROJECT\\src\\main\\resources\\"));
+            process = processBuilder.start();
+            runningReplica = replica;
+            System.out.println("Started " + replica + "...");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public static void stopReplica() {
+        System.out.println("Stopping replica...");
         process.destroyForcibly();
     }
 

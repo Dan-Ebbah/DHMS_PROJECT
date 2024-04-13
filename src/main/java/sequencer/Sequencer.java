@@ -2,6 +2,7 @@ package sequencer;
 
 import java.io.IOException;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,8 +11,8 @@ public class Sequencer {
     private static final AtomicInteger SEQUENCER_ID = new AtomicInteger(0);
     private static final String SEQUENCER_IP = "192.168.43.159";
     private static final int SEQUENCER_RECEIVE_PORT = 2222;
-    private static final int[] RM_PORTS = {4444, 4444, 4444, 4444}; // Ports of the replica managers
-    private static final String[] RM_HOSTS = {"192.168.43.254", "192.168.43.7", "192.168.43.159", "192.168.43.251"};
+    private static final int[] RM_PORTS = {4444, 4444, 4444, 4444};
+    private static final String[] RM_HOSTS = {"192.168.43.7", "192.168.43.254", "192.168.43.159", "192.168.43.251"};
     private static final int BUFFER_SIZE = 1024;
     private static final int NUM_REPLICA_MANAGERS = 3;
 
@@ -53,7 +54,7 @@ public class Sequencer {
 
     private static void sendMessage(DatagramSocket socket, String message, int rmNumber) {
         try {
-            byte[] data = message.getBytes();
+            byte[] data = message.getBytes(StandardCharsets.UTF_8);
             DatagramPacket packet = new DatagramPacket(data, data.length,
                     InetAddress.getByName(RM_HOSTS[rmNumber - 1]), RM_PORTS[rmNumber - 1]);
             socket.send(packet);
@@ -62,8 +63,8 @@ public class Sequencer {
             receivedAck = receiveAck(socket);
 
             if (!receivedAck) {
+                System.out.println("No ACK yet, so retrying...");
                 sendMessage(socket, message, rmNumber);
-                System.out.println("Just sent -> " + message);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
