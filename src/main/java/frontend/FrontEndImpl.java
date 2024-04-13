@@ -24,7 +24,7 @@ public class FrontEndImpl implements FrontEndInterface {
     private static final int FE_SEND_PORT_FOR_RM = 19002;
     private static final String SEQUENCER_IP = "192.168.2.11";
     private static final int SEQUENCER_PORT = 2222;
-    private static final String[] RM_HOSTS = new String[] {"192.168.2.37","192.168.2.11"};//{"192.168.43.254", "192.168.43.7", "192.168.43.159", "192.168.43.251"};
+    private static final String[] RM_HOSTS = new String[] {"192.168.43.254", "192.168.43.7", "192.168.43.159", "192.168.43.251"};
     private static final int[] RM_PORTS = new int[] {4444, 4444, 4444, 4444};
     private static final String FAILURE = "FAILURE";
 
