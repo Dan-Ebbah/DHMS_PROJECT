@@ -28,7 +28,7 @@ public class LogRecord {
     public void addToLogsFile() {
 
         try {
-            Files.write(Paths.get("D:", "java_intellji", "DHMS_PROJECT", "src", "main", "java", "replica4", "log.txt"),
+            Files.write(Paths.get("C:", "Users", "shanm", "IdeaProjects", "DHMS_PROJECT", "src", "main", "java", "replica1", "log.txt"),
                     this.toString().getBytes(), StandardOpenOption.APPEND);
         } catch (IOException e) {
             throw new RuntimeException(e);

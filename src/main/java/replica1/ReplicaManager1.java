@@ -1,7 +1,5 @@
 package replica1;
 
-import replicaManager.ReplicaInterface;
-
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import java.io.File;
@@ -79,7 +77,7 @@ public class ReplicaManager1 {
 
         int i = 0;
         for (String city : new String[] {"MTL", "QUE", "SHE"}) {
-            replicaManager.ReplicaInterface replicaInterface = connectToCityServerObject(city);
+            ReplicaInterface replicaInterface = connectToCityServerObject(city);
             replicaInterface.setInfo(concurrentHashMapCities[i]);
             i ++;
         }
@@ -182,7 +180,7 @@ public class ReplicaManager1 {
     private static String getReplicaData() {
         StringBuilder hospitalsData = new StringBuilder();
         for (String city : new String[]{"MTL", "QUE", "SHE"}) {
-            replicaManager.ReplicaInterface replicaInterface = connectToCityServerObject(city);
+            ReplicaInterface replicaInterface = connectToCityServerObject(city);
             hospitalsData.append(replicaInterface.getInfo());
             hospitalsData.append("/");
         }
@@ -205,7 +203,7 @@ public class ReplicaManager1 {
         String city = splitRequestMessage[0];
         String operation = splitRequestMessage[1];
 
-        replicaManager.ReplicaInterface replicaInterface = connectToCityServerObject(city);
+        ReplicaInterface replicaInterface = connectToCityServerObject(city);
         if (replicaInterface == null) {
             System.out.println("ERROR as I could not connect to server object of " + city);
         }
@@ -215,7 +213,7 @@ public class ReplicaManager1 {
         return result;
     }
 
-    private static String callOperation(replicaManager.ReplicaInterface replicaInterface, String operation, String [] parameters) {
+    private static String callOperation(ReplicaInterface replicaInterface, String operation, String [] parameters) {
         switch (operation) {
             case "addAppointment":
                 return replicaInterface.addAppointment(parameters[0], parameters[1], Integer.parseInt(parameters[2]));
@@ -235,7 +233,7 @@ public class ReplicaManager1 {
         return null;
     }
 
-    private static replicaManager.ReplicaInterface connectToCityServerObject(String city){
+    private static ReplicaInterface connectToCityServerObject(String city){
         try {
             String url = "http://localhost:8080/" + city.toLowerCase() + "Hospital" + "?wsdl";
             URL urlLink = new URL(url);
@@ -252,7 +250,7 @@ public class ReplicaManager1 {
     public static void forwardToFrontEnd(String message, String request)
     {
         try {
-            String[] requestArgs = request.split(" ");//requestId;
+            String[] requestArgs = request.split(" ");
             InetAddress FrontAddress = InetAddress.getByName(requestArgs[1]);
             int FrontEndPort = Integer.parseInt(requestArgs[2]);
             String updatedMessage = "1 " + requestArgs[3] + " " + message;

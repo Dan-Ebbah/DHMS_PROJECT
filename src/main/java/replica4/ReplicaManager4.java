@@ -1,8 +1,5 @@
 package replica4;
 
-import replica1.ReplicaManager1;
-import replicaManager.ReplicaInterface;
-
 import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 import java.io.File;
@@ -299,6 +296,6 @@ public class ReplicaManager4 {
     }
 
     public static void shutDownGracefullyAtTheTimeOfTermination() {
-        Runtime.getRuntime().addShutdownHook(new Thread(ReplicaManager1::stopReplica));
+        Runtime.getRuntime().addShutdownHook(new Thread(ReplicaManager4::stopReplica));
     }
 }

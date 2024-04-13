@@ -166,12 +166,14 @@ public class FrontEndImpl implements FrontEndInterface {
         long startTime = System.currentTimeMillis();
         while (true) {
             if (hasReceivedEnoughValidResponses()) {
-                return getValidResponse();
+                String validResponse = getValidResponse();
+                System.out.println("Returning to client: " + validResponse);
+                return validResponse;
             }
 
             long currentTime = System.currentTimeMillis();
             if (currentTime - startTime > 5000) {
-                return responseFromRMs[0];
+                return tryReturnAnyNonEmptyResponse();
             }
         }
     }
@@ -184,12 +186,21 @@ public class FrontEndImpl implements FrontEndInterface {
         for (int i = 0; i < responseFromRMs.length; i ++) {
             for (int j = i + 1; j < responseFromRMs.length; j ++) {
                 if (!"".equals(responseFromRMs[j]) && responseFromRMs[j].equals(responseFromRMs[i])) {
-                    System.out.println("returning: " + responseFromRMs[i]);
                     return responseFromRMs[i];
                 }
             }
         }
         return "";
+    }
+
+    private String tryReturnAnyNonEmptyResponse() {
+        for (int i = 0; i < responseFromRMs.length; i ++) {
+            if (!responseFromRMs[i].isEmpty()) {
+                return responseFromRMs[i];
+            }
+        }
+
+        return "No valid response to send";
     }
 
     private String createUdpRequest(String... requestElements) {
@@ -217,7 +228,7 @@ public class FrontEndImpl implements FrontEndInterface {
                     SEQUENCER_PORT);
             resetState();
             socketToSendToSequencer.send(datagram);
-            System.out.println("sent to sequencer");
+            System.out.println("Request '" + udpRequest + "' sent to sequencer");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -267,6 +278,7 @@ public class FrontEndImpl implements FrontEndInterface {
         while (true) {
             if (!waitingForFirstResponse
                     && requestToSequencerTimeStamp != 0
+                    && timeTakenForFastestResponse != -1
                     && timeStampOfLastCheckedRequest != requestToSequencerTimeStamp
                     && System.currentTimeMillis() - requestToSequencerTimeStamp >= 2 * timeTakenForFastestResponse) {
                 for (int i = 0; i < 4; i++) {
@@ -320,10 +332,10 @@ public class FrontEndImpl implements FrontEndInterface {
         for (int i = 0; i < 4; i ++) {
             if (!"".equals(responseFromRMs[i]) && !majorityResponse.equals(responseFromRMs[i])) {
                 try {
-                    String crashMessage = "byzantine";
+                    String faultMessage = "byzantine";
                     DatagramPacket datagram = new DatagramPacket(
-                            crashMessage.getBytes(StandardCharsets.UTF_8),
-                            crashMessage.getBytes(StandardCharsets.UTF_8).length,
+                            faultMessage.getBytes(StandardCharsets.UTF_8),
+                            faultMessage.getBytes(StandardCharsets.UTF_8).length,
                             InetAddress.getByName(RM_HOSTS[i]),
                             RM_PORTS[i]);
                     socketToSendToRMs.send(datagram);

@@ -16,11 +16,11 @@ public class HospitalServer {
             Endpoint queHospital = Endpoint.publish("http://localhost:8080/queHospital", new QUEHospital());
             Endpoint sheHospital = Endpoint.publish("http://localhost:8080/sheHospital", new SHEHospital());
 
-            File f = new File("D:/java_intellji/DHMS_PROJECT/src/main/java/replica4/log.txt");
+            File f = new File("C:/Users/shanm/IdeaProjects/DHMS_PROJECT/src/main/java/replica1/log.txt");
             if (!f.exists()) {
                 f.createNewFile();
             } else {
-                Files.write(Paths.get("D:", "java_intellji", "DHMS_PROJECT", "src", "main", "java", "replica4", "log.txt"),
+                Files.write(Paths.get("C:", "Users", "shanm", "IdeaProjects", "DHMS_PROJECT", "src", "main", "java", "replica1", "log.txt"),
                         "\n-----------------------------------\n".getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
             }
 
