@@ -210,7 +210,7 @@ public class TestClient {
             stub.addAppointment(clientID,"SHEA131212","Dental",5);
             setClient("MTLA1234");
             stub.bookAppointment(clientID,"Dental","SHEA101212");
-            stub.bookAppointment(clientID,"Dental","SHEA121212");
+            stub.bookAppointment(clientID,"Dental","SHEA111212");
             t = new TestMessage("Book more than 3 appointment in a week at another hospital","true",
                     stub.bookAppointment(clientID,"Dental","SHEA131212"));
             counter += t.getResult();
