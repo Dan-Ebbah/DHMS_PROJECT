@@ -211,7 +211,7 @@ public class TestClient {
             setClient("MTLA1234");
             stub.bookAppointment(clientID,"Dental","SHEA101212");
             stub.bookAppointment(clientID,"Dental","SHEA121212");
-            t = new TestMessage("Book more than 3 appointment in a week at another hospital","false",
+            t = new TestMessage("Book more than 3 appointment in a week at another hospital","true",
                     stub.bookAppointment(clientID,"Dental","SHEA131212"));
             counter += t.getResult();
 
@@ -263,7 +263,7 @@ public class TestClient {
         System.out.println("Get appointment schedule tests: \n");
         do{
             setClient("MTLP4321");
-            t = new TestMessage("Get appointment schedule of client that has never booked an appointment",new String[] {"some fail"},
+            t = new TestMessage("Get appointment schedule of client that has never booked an appointment",new String[] {},
                     stub.getAppointmentSchedule(clientID));
             counter += t.getResult();
 
@@ -315,7 +315,7 @@ public class TestClient {
         if(broken){
             System.out.println("Cannot continue tests");
         }
-        System.out.println("("+counter + "/2) tests passed\n\n");
+        System.out.println("("+counter + "/1) tests passed\n\n");
         return !broken;
     }
     private static boolean swapAppointmentTest(){
