@@ -22,9 +22,9 @@ public class FrontEndImpl implements FrontEndInterface {
     private static final int FE_RECEIVE_PORT_FOR_RM = 19000;
     private static final int FE_SEND_PORT_FOR_SEQUENCER = 19001;
     private static final int FE_SEND_PORT_FOR_RM = 19002;
-    private static final String SEQUENCER_IP = "192.168.2.11";
+    private static final String SEQUENCER_IP = "172.20.10.2";
     private static final int SEQUENCER_PORT = 2222;
-    private static final String[] RM_HOSTS = new String[] {"192.168.43.254", "192.168.43.7", "192.168.43.159", "192.168.43.251"};
+    private static final String[] RM_HOSTS = new String[] {"172.20.10.6", "172.20.10.2", "172.20.10.5", "172.20.10.3"};
     private static final int[] RM_PORTS = new int[] {4444, 4444, 4444, 4444};
     private static final String FAILURE = "FAILURE";
 
@@ -172,7 +172,7 @@ public class FrontEndImpl implements FrontEndInterface {
             }
 
             long currentTime = System.currentTimeMillis();
-            if (currentTime - startTime > 5000) {
+            if (currentTime - startTime > 7000) {
                 return tryReturnAnyNonEmptyResponse();
             }
         }
@@ -195,7 +195,7 @@ public class FrontEndImpl implements FrontEndInterface {
 
     private String tryReturnAnyNonEmptyResponse() {
         for (int i = 0; i < responseFromRMs.length; i ++) {
-            if (!responseFromRMs[i].isEmpty()) {
+            if (!"-".equals(responseFromRMs[i])) {
                 return responseFromRMs[i];
             }
         }
@@ -273,6 +273,49 @@ public class FrontEndImpl implements FrontEndInterface {
         }
     }
 
+//    private void notifyRMsInCaseOfCrash() {
+//        long timeStampOfLastCheckedRequest = -1;
+//        while (true) {
+//            if (!waitingForFirstResponse
+//                    && requestToSequencerTimeStamp != 0
+//                    && timeTakenForFastestResponse != -1
+//                    && timeStampOfLastCheckedRequest != requestToSequencerTimeStamp
+//                    && System.currentTimeMillis() - requestToSequencerTimeStamp >= 2000 + timeTakenForFastestResponse) {
+//                for (int i = 0; i < RM_HOSTS.length; i++) {
+//                    if ("-".equals(responseFromRMs[i])) {
+//                        for (int j = 0; j < 4; j++) {
+//                            if (j != i) {
+//                                try {
+//                                    String crashMessage = "crash " + String.valueOf(i + 1);
+//                                    DatagramPacket datagram = new DatagramPacket(
+//                                            crashMessage.getBytes(StandardCharsets.UTF_8),
+//                                            crashMessage.getBytes(StandardCharsets.UTF_8).length,
+//                                            InetAddress.getByName(RM_HOSTS[j]),
+//                                            RM_PORTS[j]);
+//                                    socketToSendToRMs.send(datagram);
+//                                } catch (IOException e) {
+//                                    throw new RuntimeException(e);
+//                                }
+//                            }
+//                        }
+//                        try {
+//                            String crashMessage = "crash " + String.valueOf(i + 1);
+//                            DatagramPacket datagram = new DatagramPacket(
+//                                    crashMessage.getBytes(StandardCharsets.UTF_8),
+//                                    crashMessage.getBytes(StandardCharsets.UTF_8).length,
+//                                    InetAddress.getByName(RM_HOSTS[i]),
+//                                    RM_PORTS[i]);
+//                            socketToSendToRMs.send(datagram);
+//                        } catch (IOException e) {
+//                            throw new RuntimeException(e);
+//                        }
+//                    }
+//                }
+//                timeStampOfLastCheckedRequest = requestToSequencerTimeStamp;
+//            }
+//        }
+//    }
+
     private void notifyRMsInCaseOfCrash() {
         long timeStampOfLastCheckedRequest = -1;
         while (true) {
@@ -280,7 +323,7 @@ public class FrontEndImpl implements FrontEndInterface {
                     && requestToSequencerTimeStamp != 0
                     && timeTakenForFastestResponse != -1
                     && timeStampOfLastCheckedRequest != requestToSequencerTimeStamp
-                    && System.currentTimeMillis() - requestToSequencerTimeStamp >= 1000+ timeTakenForFastestResponse) {
+                    && System.currentTimeMillis() - requestToSequencerTimeStamp >= 2000 + timeTakenForFastestResponse) {
                 for (int i = 0; i < RM_HOSTS.length; i++) {
                     if ("-".equals(responseFromRMs[i])) {
 //                        for (int j = 0; j < 4; j++) {
