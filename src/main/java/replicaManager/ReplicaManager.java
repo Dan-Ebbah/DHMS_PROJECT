@@ -19,7 +19,7 @@ public class ReplicaManager {
     private static Process process;
 
     public static void main(String[] args) {
-        startReplica("replica1");
+        startReplica("replica4");
         new Thread(ReplicaManager::startNewThreadForOtherRMs).start();
 
         //should start and be ready to receive messages
@@ -37,14 +37,14 @@ public class ReplicaManager {
                     case "crash":
                         if (isCrashed()) {
                             List<String> dataList = getOtherRMsData();
-                            startReplica("replica1");
+                            startReplica("replica4");
                             setData(dataList);
                         }
                     case "byzantine":
                         // do something: start a new replica with the Db from other RMs
                         List<String> dataList = getOtherRMsData();
                         stopReplica();
-                        startReplica("replica1");
+                        startReplica("replica4");
                         setData(dataList);
                     default:
                         forwardToReplica(splitMessage[1]);
@@ -236,10 +236,22 @@ public class ReplicaManager {
 
     private static ReplicaInterface connectToCityServerObject(String city){
         try {
-            String url = "http://localhost:8080/" + city.toLowerCase() + "Hospital" + "?wsdl";
+            String myCity ="";
+            switch (city.toLowerCase()) {
+                case "mtl":
+                    myCity ="montreal_server";
+                    break;
+                case "que":
+                    myCity ="Quebec_server";
+                    break;
+                case "she":
+                    myCity ="Sherbrooke_server";
+                    break;
+            }
+            String url = "http://localhost:8081/" +myCity + "?wsdl";
             URL urlLink = new URL(url);
             System.out.println("trying to connect to " + url);
-            QName qName = new QName("http://replica1/", city.toLowerCase() + "HospitalService");
+            QName qName = new QName("http://replica4/", myCity + "Service");
             Service service = Service.create(urlLink, qName);
             return service.getPort(ReplicaInterface.class);
         } catch (Exception e) {
@@ -282,12 +294,12 @@ public class ReplicaManager {
                     break;
                 case "replica3":
                     processBuilder = new ProcessBuilder("java", "-cp", "replica3-daniel.jar", "replica3.<Class>");
-                    processBuilder.directory(new File("C:\\Users\\shanm\\IdeaProjects\\DHMS_PROJECT\\src\\main\\resources\\"));
+                   processBuilder.directory(new File("C:\\Users\\shanm\\IdeaProjects\\DHMS_PROJECT\\src\\main\\resources\\"));
                     process = processBuilder.start();
                     break;
                 case "replica4":
-                    processBuilder = new ProcessBuilder("java", "-cp", "replica4-naveen.jar", "replica4.<Class>");
-                    processBuilder.directory(new File("C:\\Users\\shanm\\IdeaProjects\\DHMS_PROJECT\\src\\main\\resources\\"));
+                    processBuilder = new ProcessBuilder("java", "-cp", "replica4-naveen.jar", "replica4.Main_server");
+                    processBuilder.directory(new File("D:\\java_intellji\\DHMS_PROJECT\\src\\main\\resources"));
                     process = processBuilder.start();
                     break;
             }
