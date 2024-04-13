@@ -22,9 +22,9 @@ public class FrontEndImpl implements FrontEndInterface {
     private static final int FE_RECEIVE_PORT_FOR_RM = 19000;
     private static final int FE_SEND_PORT_FOR_SEQUENCER = 19001;
     private static final int FE_SEND_PORT_FOR_RM = 19002;
-    private static final String SEQUENCER_IP = "192.168.43.159";
+    private static final String SEQUENCER_IP = "192.168.2.11";
     private static final int SEQUENCER_PORT = 2222;
-    private static final String[] RM_HOSTS = new String[] {"192.168.43.254", "192.168.43.7", "192.168.43.159", "192.168.43.251"};
+    private static final String[] RM_HOSTS = new String[] {"192.168.2.37","192.168.2.11"};//{"192.168.43.254", "192.168.43.7", "192.168.43.159", "192.168.43.251"};
     private static final int[] RM_PORTS = new int[] {4444, 4444, 4444, 4444};
     private static final String FAILURE = "FAILURE";
 
@@ -42,7 +42,7 @@ public class FrontEndImpl implements FrontEndInterface {
 
     public FrontEndImpl() {
         try {
-            responseFromRMs = new String[] {"", "", "", ""};
+            responseFromRMs = new String[] {"-", "-", "-", "-"};
             udpRequest = "";
             requestToSequencerTimeStamp = 0;
             timeTakenForFastestResponse = -1;
@@ -179,18 +179,18 @@ public class FrontEndImpl implements FrontEndInterface {
     }
 
     private boolean hasReceivedEnoughValidResponses() {
-        return !"".equals(getValidResponse());
+        return !"-".equals(getValidResponse());
     }
 
     private String getValidResponse() {
         for (int i = 0; i < responseFromRMs.length; i ++) {
             for (int j = i + 1; j < responseFromRMs.length; j ++) {
-                if (!"".equals(responseFromRMs[j]) && responseFromRMs[j].equals(responseFromRMs[i])) {
+                if (!"-".equals(responseFromRMs[j]) && responseFromRMs[j].equals(responseFromRMs[i])) {
                     return responseFromRMs[i];
                 }
             }
         }
-        return "";
+        return "-";
     }
 
     private String tryReturnAnyNonEmptyResponse() {
@@ -280,9 +280,9 @@ public class FrontEndImpl implements FrontEndInterface {
                     && requestToSequencerTimeStamp != 0
                     && timeTakenForFastestResponse != -1
                     && timeStampOfLastCheckedRequest != requestToSequencerTimeStamp
-                    && System.currentTimeMillis() - requestToSequencerTimeStamp >= 2 * timeTakenForFastestResponse) {
-                for (int i = 0; i < 4; i++) {
-                    if ("".equals(responseFromRMs[i])) {
+                    && System.currentTimeMillis() - requestToSequencerTimeStamp >= 1000+ timeTakenForFastestResponse) {
+                for (int i = 0; i < RM_HOSTS.length; i++) {
+                    if ("-".equals(responseFromRMs[i])) {
 //                        for (int j = 0; j < 4; j++) {
 //                            if (j != i) {
 //                                try {
@@ -317,20 +317,20 @@ public class FrontEndImpl implements FrontEndInterface {
     }
 
     public void notifyRMIfSoftwareFailure() {
-        String majorityResponse = "";
-        for (int i = 0; i < 4; i ++) {
+        String majorityResponse = "-";
+        for (int i = 0; i < RM_HOSTS.length; i ++) {
             for (int j = i + 1; j < 4; j ++) {
-                if (responseFromRMs[i].equals(responseFromRMs[j]) && !"".equals(responseFromRMs[i])) {
+                if (responseFromRMs[i].equals(responseFromRMs[j]) && !"-".equals(responseFromRMs[i])) {
                     majorityResponse = responseFromRMs[i];
                 }
             }
         }
-        if ("".equals(majorityResponse)) {
+        if ("-".equals(majorityResponse)) {
             return;
         }
-
-        for (int i = 0; i < 4; i ++) {
-            if (!"".equals(responseFromRMs[i]) && !majorityResponse.equals(responseFromRMs[i])) {
+        
+        for (int i = 0; i < RM_HOSTS.length; i ++) {
+            if (!"-".equals(responseFromRMs[i]) && !majorityResponse.equals(responseFromRMs[i])) {
                 try {
                     String faultMessage = "byzantine";
                     DatagramPacket datagram = new DatagramPacket(
@@ -348,7 +348,7 @@ public class FrontEndImpl implements FrontEndInterface {
     }
 
     private void resetState() {
-        responseFromRMs = new String[] {"", "", "", ""};
+        responseFromRMs = new String[] {"-", "-", "-", "-"};
         timeTakenForFastestResponse = -1;
         requestToSequencerTimeStamp = System.currentTimeMillis();
         waitingForFirstResponse = true;

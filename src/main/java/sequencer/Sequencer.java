@@ -2,7 +2,6 @@ package sequencer;
 
 import java.io.IOException;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,7 +13,7 @@ public class Sequencer {
     private static final int[] RM_PORTS = {4444, 4444, 4444, 4444};
     private static final String[] RM_HOSTS = {"192.168.43.7", "192.168.43.254", "192.168.43.159", "192.168.43.251"};
     private static final int BUFFER_SIZE = 1024;
-    private static final int NUM_REPLICA_MANAGERS = 3;
+    private static final int NUM_REPLICA_MANAGERS = RM_HOSTS.length;
 
     public static void main(String[] args) {
         try (DatagramSocket sequencerSocket = new DatagramSocket(null)) {
