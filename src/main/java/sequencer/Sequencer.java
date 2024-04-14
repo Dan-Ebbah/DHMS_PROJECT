@@ -9,10 +9,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Sequencer {
     private static final AtomicInteger SEQUENCER_ID = new AtomicInteger(0);
-    private static final String SEQUENCER_IP = "192.168.43.159";
+    private static final String SEQUENCER_IP = "192.168.2.11";
     private static final int SEQUENCER_RECEIVE_PORT = 2222;
     private static final int[] RM_PORTS = {4444, 4444, 4444, 4444};
-    private static final String[] RM_HOSTS = {"192.168.43.7", "192.168.43.254", "192.168.43.159", "192.168.43.251"};
+    private static final String[] RM_HOSTS = {"192.168.2.11","192.168.2.37"};//{"192.168.43.7", "192.168.43.254", "192.168.43.159", "192.168.43.251"};
     private static final int BUFFER_SIZE = 1024;
     private static final int NUM_REPLICA_MANAGERS = RM_HOSTS.length;
 
@@ -45,7 +45,13 @@ public class Sequencer {
             // Send request to each replica manager using unicast
             for (int i = 1; i <= NUM_REPLICA_MANAGERS; i++) {
                 int finalI = i;
-                new Thread(() -> sendMessage(sockets.get(finalI - 1), message, finalI)).start();
+                new Thread(() -> {
+                    try {
+                        sendMessage(new DatagramSocket(), message, finalI);
+                    } catch (SocketException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).start();
             }
         } catch (SocketException e) {
             throw new RuntimeException(e);
@@ -80,7 +86,7 @@ public class Sequencer {
             String messageReceived = new String(ackPacket.getData(), 0, ackPacket.getLength());
             System.out.println("Acknowledgement Received => " + messageReceived + " from ip = " + ackPacket.getAddress().getHostAddress());
             return true;
-        } catch (SocketException e) {
+        } catch (SocketTimeoutException e) {
             return false;
         } catch (IOException e) {
             throw new RuntimeException(e);
