@@ -44,6 +44,7 @@ public class ReplicaManager2 {
             while (true) {
                 DatagramPacket receivePacket = getDatagramPacket(rmSocket);
                 String messageReceived = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                System.out.println("messageReceived: " + messageReceived);
                 if (handlingCrash || handlingByzantine) {
                     continue;
                 }
@@ -76,9 +77,12 @@ public class ReplicaManager2 {
                         byzantineCount = 0;
                         handlingByzantine = false;
                     default:
-                        lastExecutedSeqNumber ++;
                         String responseFromReplica = forwardToReplica(splitMessage[1]);
+                        while ("error".equals(responseFromReplica)) {
+                            responseFromReplica = forwardToReplica(splitMessage[1]);
+                        }
                         forwardToFrontEnd(responseFromReplica, metaData);
+                        lastExecutedSeqNumber ++;
                 }
             }
         } catch (IOException e) {
@@ -260,7 +264,7 @@ public class ReplicaManager2 {
 
         ReplicaInterface replicaInterface = connectToCityServerObject(city);
         if (replicaInterface == null) {
-            System.out.println("ERROR as I could not connect to server object of " + city);
+            return "error";
         }
 
         String result = callOperation(replicaInterface, operation, Arrays.copyOfRange(splitRequestMessage, 2, splitRequestMessage.length));
@@ -269,23 +273,27 @@ public class ReplicaManager2 {
     }
 
     private static String callOperation(ReplicaInterface replicaInterface, String operation, String [] parameters) {
-        switch (operation) {
-            case "addAppointment":
-                return replicaInterface.addAppointment(parameters[0], parameters[1], Integer.parseInt(parameters[2]));
-            case "removeAppointment":
-                return replicaInterface.removeAppointment(parameters[0], parameters[1]);
-            case "listAppointmentAvailability":
-                return replicaInterface.listAppointmentAvailability(parameters[0]);
-            case "bookAppointment":
-                return replicaInterface.bookAppointment(parameters[0], parameters[1], parameters[2]);
-            case "getAppointmentSchedule":
-                return replicaInterface.getAppointmentSchedule(parameters[0]);
-            case "cancelAppointment":
-                return replicaInterface.cancelAppointment(parameters[0], parameters[1]);
-            case "swapAppointment":
-                return replicaInterface.swapAppointment(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4]);
+        try {
+            switch (operation) {
+                case "addAppointment":
+                    return replicaInterface.addAppointment(parameters[0], parameters[1], Integer.parseInt(parameters[2]));
+                case "removeAppointment":
+                    return replicaInterface.removeAppointment(parameters[0], parameters[1]);
+                case "listAppointmentAvailability":
+                    return replicaInterface.listAppointmentAvailability(parameters[0]);
+                case "bookAppointment":
+                    return replicaInterface.bookAppointment(parameters[0], parameters[1], parameters[2]);
+                case "getAppointmentSchedule":
+                    return replicaInterface.getAppointmentSchedule(parameters[0]);
+                case "cancelAppointment":
+                    return replicaInterface.cancelAppointment(parameters[0], parameters[1]);
+                case "swapAppointment":
+                    return replicaInterface.swapAppointment(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4]);
+            }
+        } catch (Exception e) {
+            return "error";
         }
-        return null;
+        return "error";
     }
 
     private static ReplicaInterface connectToCityServerObject(String city){
