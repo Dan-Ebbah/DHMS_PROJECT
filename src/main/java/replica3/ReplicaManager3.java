@@ -69,7 +69,7 @@ public class ReplicaManager3 {
                     continue;
                 }
 
-                String[] splitMessage = messageReceived.split(" : ");
+                String[] splitMessage = messageReceived.split(" : ", -1);
                 String metaData = splitMessage[0];
                 switch (metaData) {
                     case "crash 3":

@@ -24,9 +24,9 @@ public class FrontEndImpl implements FrontEndInterface {
     private static final int FE_RECEIVE_PORT_FOR_RM = 19000;
     private static final int FE_SEND_PORT_FOR_SEQUENCER = 19001;
     private static final int FE_SEND_PORT_FOR_RM = 19002;
-    private static final String SEQUENCER_IP = "192.168.2.11";
+    private static final String SEQUENCER_IP = "192.168.43.159";
     private static final int SEQUENCER_PORT = 2222;
-    private static final String[] RM_HOSTS = new String[] {"192.168.2.11","192.168.2.37"};
+    private static final String[] RM_HOSTS = new String[] {"192.168.43.7", "192.168.43.254", "192.168.43.159", "192.168.43.244"};
     private static final int[] RM_PORTS = new int[] {4444,4444,4444,4444};
     private static final String FAILURE = "FAILURE";
 
@@ -278,12 +278,6 @@ public class FrontEndImpl implements FrontEndInterface {
     private void notifyRMsInCaseOfCrash() {
         long timeStampOfLastCheckedRequest = -1;
         while (true) {
-//            if (timeTakenForFastestResponse.get() != -1) {
-//                System.out.println("timeTakenForFastestResponse: " + timeTakenForFastestResponse);
-//                System.out.println("timeStampOfLastCheckedRequest: " + timeStampOfLastCheckedRequest);
-//                System.out.println("difference: " + (System.currentTimeMillis() - requestToSequencerTimeStamp.get()));
-//            }
-
             if (timeTakenForFastestResponse.get() != -1
                     && timeStampOfLastCheckedRequest != requestToSequencerTimeStamp.get()
                     && System.currentTimeMillis() - requestToSequencerTimeStamp.get() >= 2000 + timeTakenForFastestResponse.get()) {
@@ -292,7 +286,7 @@ public class FrontEndImpl implements FrontEndInterface {
                         System.out.println("inform about suspected crash at " + RM_HOSTS[i]);
                         for (int j = 0; j < 4; j++) {
                             try {
-                                String crashMessage = "crash " + i;
+                                String crashMessage = "crash " + (i + 1);
                                 DatagramPacket datagram = new DatagramPacket(
                                         crashMessage.getBytes(StandardCharsets.UTF_8),
                                         crashMessage.getBytes(StandardCharsets.UTF_8).length,
@@ -326,6 +320,7 @@ public class FrontEndImpl implements FrontEndInterface {
 
         for (int i = 0; i < RM_HOSTS.length; i ++) {
             if (!"-".equals(responseFromRMs[i]) && !majorityResponse.equals(responseFromRMs[i])) {
+                System.out.println("inform about software failure at " + RM_HOSTS[i]);
                 try {
                     String faultMessage = "byzantine";
                     DatagramPacket datagram = new DatagramPacket(

@@ -35,7 +35,7 @@ public class ReplicaManager1 {
     private static String messageWhoseExecStoppedInMiddle = "";
 
     static {
-        RM_HOSTS = new String[] {"192.168.2.37", "192.168.2.1", "192.168.2.2"};
+        RM_HOSTS = new String[] {"192.168.43.254", "192.168.43.159", "192.168.43.244"};
         RM_NUMBER_HOST_MAP = new HashMap<>();
         RM_NUMBER_HOST_MAP.put(2, RM_HOSTS[0]);
         RM_NUMBER_HOST_MAP.put(3, RM_HOSTS[1]);
@@ -69,7 +69,7 @@ public class ReplicaManager1 {
                     continue;
                 }
 
-                String[] splitMessage = messageReceived.split(" : ");
+                String[] splitMessage = messageReceived.split(" : ", -1);
                 String metaData = splitMessage[0];
                 switch (metaData) {
                     case "crash 1":
