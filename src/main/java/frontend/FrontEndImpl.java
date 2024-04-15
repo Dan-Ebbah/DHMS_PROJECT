@@ -275,49 +275,6 @@ public class FrontEndImpl implements FrontEndInterface {
         }
     }
 
-//    private void notifyRMsInCaseOfCrash() {
-//        long timeStampOfLastCheckedRequest = -1;
-//        while (true) {
-//            if (!waitingForFirstResponse
-//                    && requestToSequencerTimeStamp != 0
-//                    && timeTakenForFastestResponse != -1
-//                    && timeStampOfLastCheckedRequest != requestToSequencerTimeStamp
-//                    && System.currentTimeMillis() - requestToSequencerTimeStamp >= 2000 + timeTakenForFastestResponse) {
-//                for (int i = 0; i < RM_HOSTS.length; i++) {
-//                    if ("-".equals(responseFromRMs[i])) {
-//                        for (int j = 0; j < 4; j++) {
-//                            if (j != i) {
-//                                try {
-//                                    String crashMessage = "crash " + String.valueOf(i + 1);
-//                                    DatagramPacket datagram = new DatagramPacket(
-//                                            crashMessage.getBytes(StandardCharsets.UTF_8),
-//                                            crashMessage.getBytes(StandardCharsets.UTF_8).length,
-//                                            InetAddress.getByName(RM_HOSTS[j]),
-//                                            RM_PORTS[j]);
-//                                    socketToSendToRMs.send(datagram);
-//                                } catch (IOException e) {
-//                                    throw new RuntimeException(e);
-//                                }
-//                            }
-//                        }
-//                        try {
-//                            String crashMessage = "crash " + String.valueOf(i + 1);
-//                            DatagramPacket datagram = new DatagramPacket(
-//                                    crashMessage.getBytes(StandardCharsets.UTF_8),
-//                                    crashMessage.getBytes(StandardCharsets.UTF_8).length,
-//                                    InetAddress.getByName(RM_HOSTS[i]),
-//                                    RM_PORTS[i]);
-//                            socketToSendToRMs.send(datagram);
-//                        } catch (IOException e) {
-//                            throw new RuntimeException(e);
-//                        }
-//                    }
-//                }
-//                timeStampOfLastCheckedRequest = requestToSequencerTimeStamp;
-//            }
-//        }
-//    }
-
     private void notifyRMsInCaseOfCrash() {
         long timeStampOfLastCheckedRequest = -1;
         while (true) {
@@ -332,34 +289,19 @@ public class FrontEndImpl implements FrontEndInterface {
                     && System.currentTimeMillis() - requestToSequencerTimeStamp.get() >= 2000 + timeTakenForFastestResponse.get()) {
                 for (int i = 0; i < RM_HOSTS.length; i++) {
                     if ("-".equals(responseFromRMs[i])) {
-                        System.out.println("crash from "+RM_HOSTS[i]);
-//                        for (int j = 0; j < 4; j++) {
-//                            if (j != i) {
-//                                try {
-//                                    String crashMessage = "crash";
-//                                    DatagramPacket datagram = new DatagramPacket(
-//                                            crashMessage.getBytes(StandardCharsets.UTF_8),
-//                                            crashMessage.getBytes(StandardCharsets.UTF_8).length,
-//                                            InetAddress.getByName(RM_HOSTS[j]),
-//                                            RM_PORTS[j]);
-//                                    socketToSendToRMs.send(datagram);
-//                                } catch (IOException e) {
-//                                    throw new RuntimeException(e);
-//                                }
-//                            }
-//                        }
-
-                        try {
-                            String crashMessage = "crash";
-                            DatagramPacket datagram = new DatagramPacket(
-                                    crashMessage.getBytes(StandardCharsets.UTF_8),
-                                    crashMessage.getBytes(StandardCharsets.UTF_8).length,
-                                    InetAddress.getByName(RM_HOSTS[i]),
-                                    RM_PORTS[i]);
-                            socketToSendToRMs.send(datagram);
-                            System.out.println("crash message sent");
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
+                        System.out.println("inform about suspected crash at " + RM_HOSTS[i]);
+                        for (int j = 0; j < 4; j++) {
+                            try {
+                                String crashMessage = "crash " + i;
+                                DatagramPacket datagram = new DatagramPacket(
+                                        crashMessage.getBytes(StandardCharsets.UTF_8),
+                                        crashMessage.getBytes(StandardCharsets.UTF_8).length,
+                                        InetAddress.getByName(RM_HOSTS[j]),
+                                        RM_PORTS[j]);
+                                socketToSendToRMs.send(datagram);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
                 }
@@ -370,18 +312,14 @@ public class FrontEndImpl implements FrontEndInterface {
 
     public void notifyRMIfSoftwareFailure() {
         String majorityResponse = "-";
-//        for (int i = 0; i < RM_HOSTS.length; i ++) {
-//            for (int j = i + 1; j < 4; j ++) {
-//                if (responseFromRMs[i].equals(responseFromRMs[j]) && !"-".equals(responseFromRMs[i])) {
-//                    majorityResponse = responseFromRMs[i];
-//                }
-//            }
-//        }
-//        if ("-".equals(majorityResponse)) {
-//            return;
-//        }
+        for (int i = 0; i < RM_HOSTS.length; i ++) {
+            for (int j = i + 1; j < 4; j ++) {
+                if (responseFromRMs[i].equals(responseFromRMs[j]) && !"-".equals(responseFromRMs[i])) {
+                    majorityResponse = responseFromRMs[i];
+                }
+            }
+        }
 
-        majorityResponse = responseFromRMs[1];
         if ("-".equals(majorityResponse)) {
             return;
         }

@@ -14,21 +14,33 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ReplicaManager4 {
     private static final int RM_RECEIVE_PORT_FOR_SEQUENCER = 4444;
     public static final int LISTEN_PORT_FOR_DATA_REQUESTS = 3333;
     private static final int BUFFER_SIZE = 1024;
-    private static final String[] RM_HOSTS = {"192.168.43.7", "192.168.43.254", "192.168.43.159"};
+    private static final String[] RM_HOSTS;
+    private static final HashMap<Integer, String> RM_NUMBER_HOST_MAP;
 
     private static Process process;
-    private static boolean handlingCrash = false;
-    private static boolean handlingByzantine = false;
+    private static AtomicBoolean handlingCrash = new AtomicBoolean(false);
+    private static AtomicBoolean handlingByzantine = new AtomicBoolean(false);
     private static int byzantineCount = 0;
-    private static int lastExecutedSeqNumber = 0;
+    private static AtomicInteger lastExecutedSeqNumber = new AtomicInteger(0);
     private static String runningReplica = "";
+    private static String messageWhoseExecStoppedInMiddle = "";
 
+    static {
+        RM_HOSTS = new String[] {"192.168.2.37", "192.168.2.1", "192.168.2.2"};
+        RM_NUMBER_HOST_MAP = new HashMap<>();
+        RM_NUMBER_HOST_MAP.put(1, RM_HOSTS[0]);
+        RM_NUMBER_HOST_MAP.put(2, RM_HOSTS[1]);
+        RM_NUMBER_HOST_MAP.put(3, RM_HOSTS[2]);
+    }
 
     public static void main(String[] args) {
         shutDownGracefullyAtTheTimeOfTermination();
@@ -45,44 +57,59 @@ public class ReplicaManager4 {
                 DatagramPacket receivePacket = getDatagramPacket(rmSocket);
                 String messageReceived = new String(receivePacket.getData(), 0, receivePacket.getLength());
                 System.out.println("messageReceived: " + messageReceived);
-                if (handlingCrash || handlingByzantine) {
+                if (handlingCrash.get() || handlingByzantine.get()) {
+                    System.out.println("Handling crash or byzantine");
                     continue;
                 }
-                if(!isSequenceNumberOkayToExecute(messageReceived.split(" ")[0])) {
+                if (!(messageReceived.startsWith("crash") || messageReceived.startsWith("byzantine"))) {
+                    acknowledgeReceipt(receivePacket, rmSocket);
+                }
+                if (!isSequenceNumberOkayToExecute(messageReceived.split(" ")[0])) {
+                    System.out.println("Sequence number bad. message seq num: "+ messageReceived.split(" ")[0] +";   rm seq num: " + lastExecutedSeqNumber);
                     continue;
                 }
-                acknowledgeReceipt(receivePacket, rmSocket);
+
                 String[] splitMessage = messageReceived.split(" : ");
                 String metaData = splitMessage[0];
                 switch (metaData) {
-                    case "crash":
+                    case "crash 4":
                         if (isCrashed()) {
-                            handlingCrash = true;
+                            System.out.println("Detected an actual crash");
+                            handlingCrash.set(true);
                             List<String> dataList = getOtherRMsData();
                             startReplica("replica4");
                             setData(dataList);
-                            handlingCrash = false;
+                            reExecutePreviousMessageIfNeeded();
+                            handlingCrash.set(false);
                         }
+                        break;
+                    case "crash 1":
+                    case "crash 2":
+                    case "crash 3":
+                        break;
                     case "byzantine":
                         // do something: start a new replica with the Db from other RMs
                         byzantineCount ++;
                         if (byzantineCount < 3) {
                             continue;
                         }
-                        handlingByzantine = true;
+                        handlingByzantine.set(true);
                         stopReplica();
                         List<String> dataList = getOtherRMsData();
                         startReplica("replica1");
                         setData(dataList);
                         byzantineCount = 0;
-                        handlingByzantine = false;
+                        handlingByzantine.set(false);
+                        break;
                     default:
                         String responseFromReplica = forwardToReplica(splitMessage[1]);
-                        while ("error".equals(responseFromReplica)) {
-                            responseFromReplica = forwardToReplica(splitMessage[1]);
+                        if ("error".equals(responseFromReplica)) {
+                            messageWhoseExecStoppedInMiddle = messageReceived;
                         }
-                        forwardToFrontEnd(responseFromReplica, metaData);
-                        lastExecutedSeqNumber ++;
+                        else{
+                            forwardToFrontEnd(responseFromReplica, metaData);
+                            lastExecutedSeqNumber.getAndIncrement();
+                        }
                 }
             }
         } catch (IOException e) {
@@ -95,16 +122,32 @@ public class ReplicaManager4 {
             return true;
         }
 
+        if (!"".equals(messageWhoseExecStoppedInMiddle)) {
+            return false;
+        }
+
         int seqNumber = Integer.parseInt(value);
-        if (seqNumber == lastExecutedSeqNumber + 1) {
+        if (seqNumber == lastExecutedSeqNumber.get()+1) {
             return true;
         }
 
         return false;
     }
 
+    private static void reExecutePreviousMessageIfNeeded() {
+        String responseFromReplica = forwardToReplica(messageWhoseExecStoppedInMiddle.split(" : ")[1]);
+        if ("error".equals(responseFromReplica)) {
+            return;
+        }
+
+        forwardToFrontEnd(responseFromReplica, messageWhoseExecStoppedInMiddle.split(" : ")[0]);
+        lastExecutedSeqNumber.getAndIncrement();
+        messageWhoseExecStoppedInMiddle = "";
+    }
+
     private static void setData(List<String> dataList) {
         String correctData;
+        System.out.println("dataList:" + dataList);
         if (dataList.get(0).equalsIgnoreCase(dataList.get(1)) || dataList.get(0).equalsIgnoreCase(dataList.get(2))) {
             correctData = (dataList.get(0));
         } else if (dataList.get(1).equalsIgnoreCase(dataList.get(2))) {
@@ -112,8 +155,8 @@ public class ReplicaManager4 {
         } else {
             correctData = (dataList.get(0));
         }
-
-        String[] correctDataForHospitals =  correctData.split("/");
+        System.out.println("correctData:" + correctData);
+        String[] correctDataForHospitals =  correctData.split("/",-1);
 
         int i = 0;
         for (String city : new String[] {"MTL", "QUE", "SHE"}) {
@@ -197,7 +240,7 @@ public class ReplicaManager4 {
             HttpURLConnection huc = (HttpURLConnection) url.openConnection();
             int responseCode = huc.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
-                handlingCrash = false;
+                handlingCrash.set(false);
                 return false;
             }
         } catch (IOException e) {
@@ -291,7 +334,12 @@ public class ReplicaManager4 {
                     return replicaInterface.swapAppointment(parameters[0], parameters[1], parameters[2], parameters[3], parameters[4]);
             }
         } catch (Exception e) {
+            System.out.println("CALLOPERATION FAILED: ");
+            for(String s: parameters){
+                System.out.println(s);
+            }
             return "error";
+
         }
         return "error";
     }
@@ -342,7 +390,7 @@ public class ReplicaManager4 {
                     processBuilder = new ProcessBuilder("java", "-cp", "replica4-naveen.jar", "replica4.HospitalServer");
                     break;
             }
-            processBuilder.directory(new File("D:\\java_intellji\\DHMS_PROJECT\\src\\main\\resources\\"));
+            processBuilder.directory(new File("C:\\Users\\shanm\\IdeaProjects\\DHMS_PROJECT\\src\\main\\resources"));
             process = processBuilder.start();
             runningReplica = replica;
             System.out.println("Started " + replica + "...");
