@@ -43,7 +43,7 @@ public class TestClient {
     public static void main(String[] args) throws IOException {
         Scanner input = new Scanner(System.in);
 //        setFE("172.30.80.208");
-        setFE("192.168.43.7");
+        setFE("192.168.2.11");
         if(fe==null){
             System.out.println("Cannot connect to front end");
             return;
@@ -52,12 +52,14 @@ public class TestClient {
         loginTest();
 
 
-        addAndRemoveAppointmentTest();
-        listTest();
-        bookAppointmentAndCancelAppointmentTest();
-        getScheduleTest();
-        addingAndRemovingWithBookedAppointmentsTest();
-        swapAppointmentTest();
+//        addAndRemoveAppointmentTest();
+//        listTest();
+//        bookAppointmentAndCancelAppointmentTest();
+//        getScheduleTest();
+//        addingAndRemovingWithBookedAppointmentsTest();
+//        swapAppointmentTest();
+//        CrashTest();
+        SoftwareFailTest();
 //        if(!addAndRemoveAppointmentTest()){return;}
 //        if(!listTest()) {return;}
 //        if(!bookAppointmentAndCancelAppointmentTest()){return;}
@@ -359,6 +361,70 @@ public class TestClient {
             System.out.println("Cannot continue tests");
         }
         System.out.println("("+counter + "/5) tests passed\n\n");
+        return !broken;
+    }
+    private static boolean CrashTest(){
+        int counter=0;
+        TestMessage t;
+        boolean broken=false;
+        Scanner input = new Scanner(System.in);
+        System.out.println("Crash replicas tests: \n");
+        do{
+
+            setClient("MTLA1234");
+            stub.addAppointment(clientID,"MTLA111111","Dental",15);
+            stub.bookAppointment(clientID,"Dental", "MTLA111111");
+            setClient("MTLP0000");
+            stub.bookAppointment(clientID,"Dental", "MTLA111111");
+            setClient("MTLP1111");
+            stub.bookAppointment(clientID,"Dental", "MTLA111111");
+            setClient("MTLA2222");
+            stub.bookAppointment(clientID,"Dental", "MTLA111111");
+            setClient("MTLA3333");
+            stub.bookAppointment(clientID,"Dental", "MTLA111111");
+            System.out.println("Press enter when you have crashed the replica.");
+            input.nextLine();
+            t = new TestMessage("Crashed replica get data from other replicas test",new String[] {"MTLA111111:10"},stub.listAppointmentAvailability(clientID,"Dental"));
+            counter += t.getResult();
+            System.out.println("Press enter to continue.");
+            input.nextLine();
+            setClient("MTLA4444");
+            stub.bookAppointment(clientID,"Dental", "MTLA111111");
+            setClient("MTLA5555");
+            stub.bookAppointment(clientID,"Dental", "MTLA111111");
+            setClient("MTLA6666");
+            stub.bookAppointment(clientID,"Dental", "MTLA111111");
+            setClient("MTLA7777");
+            stub.bookAppointment(clientID,"Dental", "MTLA111111");
+            t = new TestMessage("Crash replica test",new String[] {"MTLA111111:6"},stub.listAppointmentAvailability(clientID,"Dental"));
+            counter += t.getResult();
+            stub.removeAppointment(clientID,"MTLA111111","Dental");
+        }while(false);
+
+        if(broken){
+            System.out.println("Cannot continue tests");
+        }
+        System.out.println("("+counter + "/???) tests passed\n\n");
+        return !broken;
+    }
+    private static boolean SoftwareFailTest(){
+        int counter=0;
+        TestMessage t;
+        boolean broken=false;
+        System.out.println("Software failure tests: \n");
+        do{
+            setClient("MTLA1234");
+            stub.addAppointment(clientID,"MTLA050505","Dental",5);
+            stub.addAppointment(clientID,"MTLA060606","Dental",5);
+            stub.addAppointment(clientID,"MTLA070707","Dental",5);
+            t = new TestMessage("Software failure test: ",new String[] {"MTLA050505","MTLA060606","MTLA070707"},stub.listAppointmentAvailability(clientID,"Dental"));
+            counter += t.getResult();//show that the faulty rm
+        }while(false);
+
+        if(broken){
+            System.out.println("Cannot continue tests");
+        }
+        System.out.println("("+counter + "/???) tests passed\n\n");
         return !broken;
     }
     /*

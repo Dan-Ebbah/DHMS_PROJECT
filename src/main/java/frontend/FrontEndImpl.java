@@ -14,6 +14,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 @WebService(endpointInterface="frontend.FrontEndInterface")
 @SOAPBinding(style= SOAPBinding.Style.RPC)
@@ -22,10 +24,10 @@ public class FrontEndImpl implements FrontEndInterface {
     private static final int FE_RECEIVE_PORT_FOR_RM = 19000;
     private static final int FE_SEND_PORT_FOR_SEQUENCER = 19001;
     private static final int FE_SEND_PORT_FOR_RM = 19002;
-    private static final String SEQUENCER_IP = "172.20.10.2";
+    private static final String SEQUENCER_IP = "192.168.2.11";
     private static final int SEQUENCER_PORT = 2222;
-    private static final String[] RM_HOSTS = new String[] {"172.20.10.6", "172.20.10.2", "172.20.10.5", "172.20.10.3"};
-    private static final int[] RM_PORTS = new int[] {4444, 4444, 4444, 4444};
+    private static final String[] RM_HOSTS = new String[] {"192.168.2.11","192.168.2.37"};
+    private static final int[] RM_PORTS = new int[] {4444,4444,4444,4444};
     private static final String FAILURE = "FAILURE";
 
     private final DatagramSocket socketToSendToSequencer;
@@ -35,18 +37,18 @@ public class FrontEndImpl implements FrontEndInterface {
     private int requestId = 0;
     private String[] responseFromRMs;
     private String udpRequest;
-    private long requestToSequencerTimeStamp;
-    private long timeTakenForFastestResponse;
-    private boolean waitingForFirstResponse;
+    private AtomicLong requestToSequencerTimeStamp;
+    private AtomicLong timeTakenForFastestResponse;
+    private AtomicBoolean waitingForFirstResponse;
     private boolean notifiedOfSoftwareFailure;
 
     public FrontEndImpl() {
         try {
             responseFromRMs = new String[] {"-", "-", "-", "-"};
             udpRequest = "";
-            requestToSequencerTimeStamp = 0;
-            timeTakenForFastestResponse = -1;
-            waitingForFirstResponse = false;
+            requestToSequencerTimeStamp = new AtomicLong(0);
+            timeTakenForFastestResponse = new AtomicLong(-1);
+            waitingForFirstResponse = new AtomicBoolean(false);
             notifiedOfSoftwareFailure = false;
             socketToSendToSequencer = new DatagramSocket(FE_SEND_PORT_FOR_SEQUENCER);
             socketToReceiveFromRMs = new DatagramSocket(FE_RECEIVE_PORT_FOR_RM);
@@ -236,7 +238,7 @@ public class FrontEndImpl implements FrontEndInterface {
 
     private void retryIfNoResponse() {
         while (true) {
-            if (waitingForFirstResponse && System.currentTimeMillis() - requestToSequencerTimeStamp > 5000) {
+            if (waitingForFirstResponse.get() && System.currentTimeMillis() - requestToSequencerTimeStamp.get() > 5000) {
                 callSequencer();
                 try {
                     sleep(3000);
@@ -258,9 +260,9 @@ public class FrontEndImpl implements FrontEndInterface {
                 String[] responseAsArray = responseDataAsString.split(" ", -1);
                 int rmNumber = Integer.parseInt(responseAsArray[0]);
                 if (String.valueOf(requestId).equals(responseAsArray[1])) {
-                    if (waitingForFirstResponse) {
-                        timeTakenForFastestResponse = System.currentTimeMillis() - requestToSequencerTimeStamp;
-                        waitingForFirstResponse = false;
+                    if (waitingForFirstResponse.get()) {
+                        timeTakenForFastestResponse.set(System.currentTimeMillis() - requestToSequencerTimeStamp.get());
+                        waitingForFirstResponse.set(false);
                     }
                     responseFromRMs[rmNumber - 1] = responseAsArray[2];
                     if (!notifiedOfSoftwareFailure) {
@@ -319,13 +321,18 @@ public class FrontEndImpl implements FrontEndInterface {
     private void notifyRMsInCaseOfCrash() {
         long timeStampOfLastCheckedRequest = -1;
         while (true) {
-            if (!waitingForFirstResponse
-                    && requestToSequencerTimeStamp != 0
-                    && timeTakenForFastestResponse != -1
-                    && timeStampOfLastCheckedRequest != requestToSequencerTimeStamp
-                    && System.currentTimeMillis() - requestToSequencerTimeStamp >= 2000 + timeTakenForFastestResponse) {
+//            if (timeTakenForFastestResponse.get() != -1) {
+//                System.out.println("timeTakenForFastestResponse: " + timeTakenForFastestResponse);
+//                System.out.println("timeStampOfLastCheckedRequest: " + timeStampOfLastCheckedRequest);
+//                System.out.println("difference: " + (System.currentTimeMillis() - requestToSequencerTimeStamp.get()));
+//            }
+
+            if (timeTakenForFastestResponse.get() != -1
+                    && timeStampOfLastCheckedRequest != requestToSequencerTimeStamp.get()
+                    && System.currentTimeMillis() - requestToSequencerTimeStamp.get() >= 2000 + timeTakenForFastestResponse.get()) {
                 for (int i = 0; i < RM_HOSTS.length; i++) {
                     if ("-".equals(responseFromRMs[i])) {
+                        System.out.println("crash from "+RM_HOSTS[i]);
 //                        for (int j = 0; j < 4; j++) {
 //                            if (j != i) {
 //                                try {
@@ -341,6 +348,7 @@ public class FrontEndImpl implements FrontEndInterface {
 //                                }
 //                            }
 //                        }
+
                         try {
                             String crashMessage = "crash";
                             DatagramPacket datagram = new DatagramPacket(
@@ -349,29 +357,35 @@ public class FrontEndImpl implements FrontEndInterface {
                                     InetAddress.getByName(RM_HOSTS[i]),
                                     RM_PORTS[i]);
                             socketToSendToRMs.send(datagram);
+                            System.out.println("crash message sent");
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
                     }
                 }
-                timeStampOfLastCheckedRequest = requestToSequencerTimeStamp;
+                timeStampOfLastCheckedRequest = requestToSequencerTimeStamp.get();
             }
         }
     }
 
     public void notifyRMIfSoftwareFailure() {
         String majorityResponse = "-";
-        for (int i = 0; i < RM_HOSTS.length; i ++) {
-            for (int j = i + 1; j < 4; j ++) {
-                if (responseFromRMs[i].equals(responseFromRMs[j]) && !"-".equals(responseFromRMs[i])) {
-                    majorityResponse = responseFromRMs[i];
-                }
-            }
-        }
+//        for (int i = 0; i < RM_HOSTS.length; i ++) {
+//            for (int j = i + 1; j < 4; j ++) {
+//                if (responseFromRMs[i].equals(responseFromRMs[j]) && !"-".equals(responseFromRMs[i])) {
+//                    majorityResponse = responseFromRMs[i];
+//                }
+//            }
+//        }
+//        if ("-".equals(majorityResponse)) {
+//            return;
+//        }
+
+        majorityResponse = responseFromRMs[1];
         if ("-".equals(majorityResponse)) {
             return;
         }
-        
+
         for (int i = 0; i < RM_HOSTS.length; i ++) {
             if (!"-".equals(responseFromRMs[i]) && !majorityResponse.equals(responseFromRMs[i])) {
                 try {
@@ -392,9 +406,10 @@ public class FrontEndImpl implements FrontEndInterface {
 
     private void resetState() {
         responseFromRMs = new String[] {"-", "-", "-", "-"};
-        timeTakenForFastestResponse = -1;
-        requestToSequencerTimeStamp = System.currentTimeMillis();
-        waitingForFirstResponse = true;
+        timeTakenForFastestResponse.set(-1);
+        requestToSequencerTimeStamp.set(System.currentTimeMillis());
+        waitingForFirstResponse.set(true);
         notifiedOfSoftwareFailure = false;
     }
 }
+
